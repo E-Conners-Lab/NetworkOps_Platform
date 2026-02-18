@@ -1,5 +1,5 @@
 # NetworkOps
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/E-Conners-Lab/networkops/releases)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/E-Conners-Lab/NetworkOps_Platform/releases)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
 
@@ -18,7 +18,7 @@ NetworkOps is a network automation platform built on the Model Context Protocol 
 Try NetworkOps without any hardware. Demo mode simulates a multi-device network with routers, switches, and an FRR edge device.
 
 ```bash
-git clone https://github.com/E-Conners-Lab/networkops.git && cd networkops
+git clone https://github.com/E-Conners-Lab/NetworkOps_Platform.git && cd NetworkOps_Platform
 ./scripts/quickstart.sh --demo
 # Follow the prompts, then open http://localhost:5001 — Login: admin/admin
 ```
@@ -26,7 +26,7 @@ git clone https://github.com/E-Conners-Lab/networkops.git && cd networkops
 Or manually:
 
 ```bash
-git clone https://github.com/E-Conners-Lab/networkops.git && cd networkops
+git clone https://github.com/E-Conners-Lab/NetworkOps_Platform.git && cd NetworkOps_Platform
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt        # or: uv pip install -r requirements.txt
 cd dashboard && npm install && npm run build && cd ..
@@ -37,7 +37,7 @@ DEMO_MODE=true JWT_SECRET=$JWT_SECRET python dashboard/api_server.py
 ### With Real Devices
 
 ```bash
-git clone https://github.com/E-Conners-Lab/networkops.git && cd networkops
+git clone https://github.com/E-Conners-Lab/NetworkOps_Platform.git && cd NetworkOps_Platform
 ./scripts/quickstart.sh
 # Edit .env with your device IPs and credentials
 # Edit config/devices.py with your device inventory
@@ -47,7 +47,7 @@ python dashboard/api_server.py
 ### Docker
 
 ```bash
-git clone https://github.com/E-Conners-Lab/networkops.git && cd networkops
+git clone https://github.com/E-Conners-Lab/NetworkOps_Platform.git && cd NetworkOps_Platform
 ./scripts/docker-init.sh
 # Edit .env with your credentials (or add DEMO_MODE=true for demo)
 docker compose up
