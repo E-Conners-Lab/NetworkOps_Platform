@@ -313,6 +313,23 @@ def run_command():
 @jwt_required
 def run_ping():
     """Ping from a device to a destination."""
+    from core.demo import DEMO_MODE
+    if DEMO_MODE:
+        data = request.get_json() or {}
+        device_name = data.get('device', 'R1')
+        destination = data.get('destination', '198.51.100.1')
+        count = data.get('count', 5)
+        import random
+        latency = round(random.uniform(1.0, 15.0), 1)
+        return jsonify({
+            "device": device_name,
+            "destination": destination,
+            "count": count,
+            "output": f"Sending {count}, 100-byte ICMP Echos to {destination}, timeout is 2 seconds:\n{'!' * count}\nSuccess rate is 100 percent ({count}/{count}), round-trip min/avg/max = {latency}/{latency + 1.2}/{latency + 3.5} ms",
+            "success_rate": "100%",
+            "status": "success"
+        })
+
     DEVICES = _get_devices()
     data = request.get_json()
 
@@ -736,6 +753,29 @@ def get_bgp_summary():
 @jwt_required
 def get_ospf_neighbors():
     """Get OSPF neighbor adjacencies for a device."""
+    from core.demo import DEMO_MODE
+    if DEMO_MODE:
+        from core.demo.fixtures import DEMO_OSPF_ADJACENCIES, DEMO_DEVICES
+        device_name = request.args.get('device')
+        if not device_name:
+            raise ValidationError("Missing device parameter")
+        adjacencies = DEMO_OSPF_ADJACENCIES.get(device_name, [])
+        neighbors = []
+        for adj in adjacencies:
+            neighbors.append({
+                "neighbor_id": adj["neighbor_id"],
+                "priority": 1,
+                "state": adj["state"],
+                "uptime": "1d02h",
+                "address": adj["neighbor_id"],
+                "interface": adj["interface"],
+            })
+        return jsonify({
+            "device": device_name,
+            "neighbors": neighbors,
+            "status": "success"
+        })
+
     DEVICES = _get_devices()
     device_name = request.args.get('device')
 
@@ -799,6 +839,32 @@ def get_ospf_neighbors():
 @jwt_required
 def get_ospf_interfaces():
     """Get OSPF interface configuration for a device."""
+    from core.demo import DEMO_MODE
+    if DEMO_MODE:
+        from core.demo.fixtures import DEMO_OSPF_ADJACENCIES
+        device_name = request.args.get('device')
+        if not device_name:
+            raise ValidationError("Missing device parameter")
+        adjacencies = DEMO_OSPF_ADJACENCIES.get(device_name, [])
+        interfaces = [
+            {
+                "name": adj["interface"],
+                "process_id": 1,
+                "area": 0,
+                "ip_address": adj["neighbor_id"],
+                "cost": 1,
+                "state": "P2P",
+                "neighbors": 1,
+                "neighbors_full": 1,
+            }
+            for adj in adjacencies
+        ]
+        return jsonify({
+            "device": device_name,
+            "interfaces": interfaces,
+            "status": "success"
+        })
+
     DEVICES = _get_devices()
     device_name = request.args.get('device')
 
@@ -875,6 +941,33 @@ def get_ospf_interfaces():
 @jwt_required
 def get_ospf_routes():
     """Get OSPF routes for a device."""
+    from core.demo import DEMO_MODE
+    if DEMO_MODE:
+        from core.demo.fixtures import DEMO_DEVICES
+        device_name = request.args.get('device')
+        if not device_name:
+            raise ValidationError("Missing device parameter")
+        routes = []
+        for name, dev in DEMO_DEVICES.items():
+            if name == device_name or "loopback" not in dev:
+                continue
+            if dev.get("device_type") != "cisco_xe":
+                continue
+            routes.append({
+                "prefix": f"{dev['loopback']}/32",
+                "route_type": "O",
+                "admin_distance": 110,
+                "metric": 2,
+                "next_hop": dev.get("lan_ip", dev["loopback"]),
+                "age": "1d02h",
+                "interface": "GigabitEthernet2",
+            })
+        return jsonify({
+            "device": device_name,
+            "routes": routes,
+            "status": "success"
+        })
+
     DEVICES = _get_devices()
     device_name = request.args.get('device')
 

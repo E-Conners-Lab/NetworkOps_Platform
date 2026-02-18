@@ -1,7 +1,9 @@
 """
 OSPF Network Validation Tests
 Tests the MCP lab network for proper OSPF configuration and connectivity.
+Requires real network devices — skipped when SKIP_DEVICE_TESTS is set.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -10,6 +12,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 from netmiko import ConnectHandler
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("SKIP_DEVICE_TESTS"), reason="Skipping device tests (SKIP_DEVICE_TESTS is set)"
+)
 
 # Shared device configuration (single source of truth)
 from config.devices import DEVICES as ALL_DEVICES, USERNAME, PASSWORD
