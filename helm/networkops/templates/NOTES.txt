@@ -1,0 +1,31 @@
+
+NetworkOps has been deployed successfully!
+
+{{- if .Values.ingress.enabled }}
+1. Access the API via Ingress:
+{{- range $host := .Values.ingress.hosts }}
+   http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else }}
+1. Get the API URL by running:
+   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "networkops.name" . }},app.kubernetes.io/component=api" -o jsonpath="{.items[0].metadata.name}")
+   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 5001:5001
+   echo "Visit http://127.0.0.1:5001"
+{{- end }}
+
+2. Access Swagger documentation:
+   http://localhost:5001/docs
+
+3. Default credentials:
+   Username: admin
+   Password: admin
+   (Change these immediately in production!)
+
+4. Check deployment status:
+   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+5. View logs:
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=api -f
+
+For more information, visit:
+https://github.com/E-Conners-Lab/MCP-with_Claude

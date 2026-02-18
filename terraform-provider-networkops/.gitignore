@@ -1,0 +1,29 @@
+# Binaries
+terraform-provider-networkops
+*.exe
+
+# Build output
+dist/
+
+# Go
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Test
+coverage.out
+coverage.html
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,17 @@
+device: edge1
+intent:
+  ospf_neighbors:
+    - neighbor_id: "10.255.0.1"
+      expected_state: "Full"
+      severity: critical
+
+  bgp_peers:
+    - peer_ip: "10.255.255.13"
+      peer_asn: 65000
+      expected_state: "Established"
+      severity: critical
+
+  interfaces:
+    - name: "eth0"
+      expected_status: "up"
+      severity: critical

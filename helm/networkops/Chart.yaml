@@ -1,0 +1,28 @@
+apiVersion: v2
+name: networkops
+description: AI-powered network operations platform for enterprise network management
+type: application
+version: 1.0.0
+appVersion: "2.0.0"
+keywords:
+  - network
+  - automation
+  - monitoring
+  - cisco
+  - netops
+  - ai
+home: https://github.com/E-Conners-Lab/MCP-with_Claude
+sources:
+  - https://github.com/E-Conners-Lab/MCP-with_Claude
+maintainers:
+  - name: NetworkOps Team
+    url: https://github.com/E-Conners-Lab
+dependencies:
+  - name: redis
+    version: "18.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: postgresql
+    version: "13.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled

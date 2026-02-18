@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>euniv-mcp — System Data Flow</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-void: #07080c;
+  --bg-surface: #0d1017;
+  --bg-raised: #141821;
+  --bg-elevated: #1a1f2e;
+  --border-dim: #1e2536;
+  --border-active: #2a3350;
+  --text-primary: #e2e6f0;
+  --text-secondary: #7a839e;
+  --text-dim: #4a5168;
+
+  --blue-core: #3b82f6;
+  --blue-glow: #2563eb;
+  --blue-dim: #1e3a5f;
+  --blue-surface: #0c1929;
+
+  --green-core: #22c55e;
+  --green-glow: #16a34a;
+  --green-dim: #14532d;
+  --green-surface: #0a1f12;
+
+  --orange-core: #f59e0b;
+  --orange-glow: #d97706;
+  --orange-dim: #713f12;
+  --orange-surface: #1c1508;
+
+  --purple-core: #a855f7;
+  --purple-glow: #9333ea;
+  --purple-dim: #581c87;
+  --purple-surface: #14081f;
+
+  --coral-core: #f43f5e;
+  --coral-glow: #e11d48;
+  --coral-dim: #881337;
+  --coral-surface: #1a0810;
+
+  --cyan-core: #06b6d4;
+  --cyan-glow: #0891b2;
+  --cyan-dim: #164e63;
+  --cyan-surface: #081a1f;
+}
+
+html { font-size: 14px; }
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── Scanline / CRT texture ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Header ── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, transparent 100%);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--green-core), var(--cyan-core));
+  display: grid;
+  place-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--bg-void);
+}
+
+.header h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+
+.header h1 span {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.flow-selector {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.flow-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.flow-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.flow-btn.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green-core);
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+
+.live-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--green-core);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* ── Main Canvas ── */
+.canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+}
+
+.canvas-wrap svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Detail Panel ── */
+.detail-panel {
+  position: fixed;
+  right: -420px;
+  top: 56px;
+  width: 400px;
+  height: calc(100vh - 56px);
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-dim);
+  z-index: 50;
+  transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+  padding: 0;
+}
+
+.detail-panel.open {
+  right: 0;
+}
+
+.detail-header {
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface);
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-dim);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+.detail-header h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.detail-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border-dim);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.detail-close:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.detail-body {
+  padding: 20px 24px 32px;
+}
+
+.detail-section {
+  margin-bottom: 20px;
+}
+
+.detail-section h3 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.detail-section p, .detail-section li {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.detail-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.detail-section li::before {
+  content: '›';
+  color: var(--text-dim);
+  margin-right: 8px;
+  font-weight: 600;
+}
+
+.detail-tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 2px 4px 2px 0;
+}
+
+.tag-blue { background: var(--blue-surface); color: var(--blue-core); border: 1px solid var(--blue-dim); }
+.tag-green { background: var(--green-surface); color: var(--green-core); border: 1px solid var(--green-dim); }
+.tag-orange { background: var(--orange-surface); color: var(--orange-core); border: 1px solid var(--orange-dim); }
+.tag-purple { background: var(--purple-surface); color: var(--purple-core); border: 1px solid var(--purple-dim); }
+.tag-coral { background: var(--coral-surface); color: var(--coral-core); border: 1px solid var(--coral-dim); }
+.tag-cyan { background: var(--cyan-surface); color: var(--cyan-core); border: 1px solid var(--cyan-dim); }
+
+.file-list {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 2;
+}
+
+.file-list span {
+  color: var(--text-dim);
+}
+
+/* ── Legend ── */
+.legend {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 40;
+  display: flex;
+  gap: 16px;
+  padding: 10px 16px;
+  background: rgba(13,16,23,0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ── SVG Node Styles ── */
+.node-group { cursor: pointer; }
+
+.node-group:hover .node-bg {
+  filter: brightness(1.3);
+}
+
+.node-group:hover .node-label {
+  fill: var(--text-primary);
+}
+
+.node-group.selected .node-ring {
+  opacity: 1;
+  stroke-dashoffset: 0;
+}
+
+/* ── Flow Animations ── */
+@keyframes flow-forward {
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes flow-reverse {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 24; }
+}
+
+@keyframes particle-move {
+  0% { offset-distance: 0%; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+.flow-line {
+  fill: none;
+  stroke-width: 1.5;
+  opacity: 0.15;
+  transition: opacity 0.4s;
+}
+
+.flow-line.active {
+  opacity: 0.6;
+  stroke-dasharray: 6 6;
+  animation: flow-forward 0.8s linear infinite;
+}
+
+.flow-particle {
+  r: 3;
+  opacity: 0;
+}
+
+.flow-particle.active {
+  opacity: 1;
+}
+
+/* ── Glow filters ── */
+.glow-blue { filter: drop-shadow(0 0 6px rgba(59,130,246,0.4)); }
+.glow-green { filter: drop-shadow(0 0 6px rgba(34,197,94,0.4)); }
+.glow-orange { filter: drop-shadow(0 0 6px rgba(245,158,11,0.4)); }
+.glow-purple { filter: drop-shadow(0 0 6px rgba(168,85,247,0.4)); }
+.glow-coral { filter: drop-shadow(0 0 6px rgba(244,63,94,0.4)); }
+.glow-cyan { filter: drop-shadow(0 0 6px rgba(6,182,212,0.4)); }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .legend { flex-wrap: wrap; bottom: 10px; left: 10px; right: 10px; }
+  .flow-selector { overflow-x: auto; }
+  .detail-panel { width: 100%; right: -100%; }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="logo-mark">N</div>
+    <h1>euniv-mcp <span>/ system dataflow</span></h1>
+  </div>
+  <div class="header-right">
+    <div class="flow-selector">
+      <button class="flow-btn active" data-flow="all">All Flows</button>
+      <button class="flow-btn" data-flow="request">Request</button>
+      <button class="flow-btn" data-flow="telemetry">Telemetry</button>
+      <button class="flow-btn" data-flow="agent">Agent</button>
+      <button class="flow-btn" data-flow="background">Workers</button>
+      <button class="flow-btn" data-flow="rag">RAG Chat</button>
+    </div>
+    <div class="pulse-dot"></div>
+    <span class="live-label">Animated</span>
+  </div>
+</header>
+
+<div class="canvas-wrap">
+  <svg id="flowSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <h2 id="detailTitle">Component</h2>
+    <button class="detail-close" id="detailClose">&times;</button>
+  </div>
+  <div class="detail-body" id="detailBody"></div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue-core)"></div>Frontend</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green-core)"></div>API Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orange-core)"></div>Devices</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple-core)"></div>Storage</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--coral-core)"></div>Agent</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--cyan-core)"></div>Workers</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  DATA MODEL
+// ════════════════════════════════════════════
+
+const NODES = [
+  // ── Frontend ──
+  { id: 'react', label: 'React SPA', sub: 'TypeScript / SocketIO', layer: 'blue', x: 0.5, y: 0.06,
+    detail: {
+      desc: 'Interactive network topology visualization built with React 18 and TypeScript. Uses force-directed graph rendering for topology, SocketIO for real-time telemetry, and JWT auth from localStorage.',
+      files: ['dashboard/src/App.tsx', 'dashboard/src/config.ts', 'dashboard/src/components/'],
+      connections: ['Flask API (HTTP port 5001)', 'WebSocket (SocketIO)', 'localStorage (auth tokens, layout)'],
+      tags: [['React 18', 'blue'], ['TypeScript', 'blue'], ['SocketIO', 'cyan']]
+    }},
+
+  // ── API Layer ──
+  { id: 'flask', label: 'Flask API', sub: '24 Blueprints / :5001', layer: 'green', x: 0.5, y: 0.2,
+    detail: {
+      desc: 'Application factory creates Flask app with 24 blueprint route modules. Handles JWT authentication, role-based access control, command validation, response caching, and rate limiting. Serves the React SPA static build.',
+      files: ['dashboard/api_server.py', 'dashboard/app.py', 'dashboard/extensions.py', 'dashboard/routes/'],
+      connections: ['React (serves SPA + API)', 'Netmiko/Scrapli (SSH to devices)', 'Containerlab (Multipass VM)', 'Redis (cache)', 'SQLite (auth, events)'],
+      tags: [['Flask', 'green'], ['Gunicorn', 'green'], ['JWT', 'green'], ['24 Routes', 'green']]
+    }},
+  { id: 'auth', label: 'JWT Auth', sub: 'RBAC + MFA', layer: 'green', x: 0.28, y: 0.16,
+    detail: {
+      desc: 'JWT-based authentication with role-based access control. Operators get read + limited write; admins get full access. MFA optional. Blocked commands list prevents dangerous operations. Shell injection prevention rejects ;|& characters.',
+      files: ['dashboard/routes/auth_routes.py', 'dashboard/auth/', 'data/users.db'],
+      connections: ['Flask middleware (jwt_required)', 'users.db (accounts, sessions)', 'Vault (credentials)'],
+      tags: [['JWT', 'green'], ['RBAC', 'green'], ['MFA', 'green']]
+    }},
+  { id: 'routes', label: 'Route Modules', sub: '20 Blueprints', layer: 'green', x: 0.72, y: 0.16,
+    detail: {
+      desc: 'Modular Flask blueprints: network_ops (commands, BGP, OSPF), topology (discovery), telemetry (MDT control), interfaces, devices, health, impact, provision, chat, events, changes, metrics, config_builder, admin, cache, websocket, network_tools, spa.',
+      files: ['dashboard/routes/network_ops.py', 'dashboard/routes/topology.py', 'dashboard/routes/telemetry.py', 'dashboard/routes/interfaces.py', 'dashboard/routes/impact.py', 'dashboard/routes/provision.py', 'dashboard/routes/chat.py'],
+      connections: ['Flask app (registered blueprints)', 'Core modules (device comm)', 'Data stores (SQLite, Redis)'],
+      tags: [['network_ops', 'green'], ['topology', 'green'], ['telemetry', 'green'], ['impact', 'green'], ['chat', 'green']]
+    }},
+
+  // ── Device Communication ──
+  { id: 'ssh', label: 'SSH Layer', sub: 'Netmiko / Scrapli', layer: 'orange', x: 0.22, y: 0.38,
+    detail: {
+      desc: 'SSH connection management via Netmiko (synchronous) and Scrapli (async). Connection pooling available via USE_CONNECTION_POOL flag. Handles IOS-XE command execution, config changes, and show command parsing with TextFSM/TTP templates.',
+      files: ['core/scrapli_manager.py', 'core/netmiko_manager.py', 'core/connection_pool.py', 'core/ntc_parser.py'],
+      connections: ['EVE-NG devices (SSH:22)', 'Flask routes (command execution)', 'Connection pool (reuse)'],
+      tags: [['Netmiko', 'orange'], ['Scrapli', 'orange'], ['TextFSM', 'orange']]
+    }},
+  { id: 'clab', label: 'Containerlab', sub: 'Multipass VM', layer: 'orange', x: 0.5, y: 0.38,
+    detail: {
+      desc: 'Containerlab integration via Multipass VM. Executes commands on FRR, SR Linux, and Linux containers. Management IPs pinned in datacenter.clab.yml. Uses subprocess + SSH to Multipass VM for clab commands.',
+      files: ['core/containerlab.py', 'containerlab/datacenter.clab.yml', 'containerlab/configs/'],
+      connections: ['Multipass VM (SSH)', 'Docker containers (clab exec)', 'edge1, spine1, R9, server1, server2'],
+      tags: [['Multipass', 'orange'], ['Docker', 'orange'], ['FRR', 'orange'], ['SR Linux', 'orange']]
+    }},
+  { id: 'netconf', label: 'NETCONF', sub: 'ncclient / :830', layer: 'orange', x: 0.78, y: 0.38,
+    detail: {
+      desc: 'NETCONF client for YANG-based device management. Uses ncclient with connection pooling. Supports get-config, edit-config, and RPC operations. Primarily for Juniper and IOS-XE NETCONF-capable devices.',
+      files: ['core/netconf_client.py', 'core/netconf_pool.py', 'core/juniper_netconf.py'],
+      connections: ['Devices (SSH:830)', 'Flask routes', 'YANG models'],
+      tags: [['ncclient', 'orange'], ['YANG', 'orange'], ['XML-RPC', 'orange']]
+    }},
+
+  // ── Network Devices ──
+  { id: 'eveng', label: 'EVE-NG Devices', sub: 'R1-R7, Switches', layer: 'orange', x: 0.22, y: 0.54,
+    detail: {
+      desc: 'Cisco C8000V routers (IOS-XE 17.13.1a): R1, R2, R3, R4, R6, R7. Cat9kv switches: Switch-R1, Switch-R2, Switch-R4. Linux hosts: Alpine-1, Docker-1. Management network 10.255.255.0/24.',
+      files: ['config/devices.py'],
+      connections: ['SSH:22 (Netmiko/Scrapli)', 'NETCONF:830', 'gRPC:57000 (MDT)', 'SNMP:161'],
+      tags: [['IOS-XE', 'orange'], ['C8000V', 'orange'], ['Cat9kv', 'orange'], ['10.255.255.x', 'orange']]
+    }},
+  { id: 'clabdevs', label: 'Clab Devices', sub: 'edge1, spine1, R9', layer: 'orange', x: 0.5, y: 0.54,
+    detail: {
+      desc: 'Containerlab topology: edge1 (FRR, eBGP to R3), spine1 (Nokia SR Linux), R9 (FRR), server1, server2. Management network 172.20.20.0/24 with pinned static IPs.',
+      files: ['containerlab/datacenter.clab.yml', 'containerlab/configs/edge1-frr.conf'],
+      connections: ['Multipass VM (clab exec)', 'eBGP R3↔edge1', 'OSPF mesh', '172.20.20.x mgmt'],
+      tags: [['FRR', 'orange'], ['SR Linux', 'orange'], ['172.20.20.x', 'orange']]
+    }},
+
+  // ── Telemetry ──
+  { id: 'mdt', label: 'MDT Collector', sub: 'gRPC :57000', layer: 'cyan', x: 0.78, y: 0.54,
+    detail: {
+      desc: 'Model-Driven Telemetry collector. gRPC server on port 57000 receives streaming protobuf-encoded telemetry from IOS-XE devices. Decodes CPU, memory, interface stats. Stores in TelemetryStore and broadcasts via SocketIO.',
+      files: ['dashboard/mdt_collector.py', 'dashboard/proto/telemetry.proto', 'core/telemetry_store.py'],
+      connections: ['IOS-XE devices (gRPC push)', 'TelemetryStore (in-memory)', 'SocketIO (broadcast)', 'InfluxDB (optional)'],
+      tags: [['gRPC', 'cyan'], ['Protobuf', 'cyan'], ['Streaming', 'cyan']]
+    }},
+
+  // ── Data Storage ──
+  { id: 'sqlite', label: 'SQLite Databases', sub: '12 databases', layer: 'purple', x: 0.15, y: 0.72,
+    detail: {
+      desc: '11 SQLite databases in /data/: users.db, agent.db, changes.db, compliance.db, events.db, impact_trending.db, network_state.db, config_trees.db, memory.db, scheduler.db, playbooks.db.',
+      files: ['data/users.db', 'data/agent.db', 'data/changes.db', 'data/compliance.db', 'data/events.db', 'data/impact_trending.db', 'data/network_state.db', 'core/db.py', 'core/unified_db.py'],
+      connections: ['Flask routes (read/write)', 'Agent (decisions, audit)', 'Compliance engine', 'Event correlation'],
+      tags: [['users.db', 'purple'], ['agent.db', 'purple'], ['events.db', 'purple'], ['compliance.db', 'purple']]
+    }},
+  { id: 'redis', label: 'Redis', sub: 'Cache / Broker', layer: 'purple', x: 0.38, y: 0.72,
+    detail: {
+      desc: 'Redis server with 3 logical databases. DB0: API response cache (30-60s TTL) + session storage. DB1: Celery task broker. DB2: Celery task results (1h TTL). Optional — degrades gracefully when unavailable.',
+      files: ['dashboard/extensions.py', 'core/celery_app.py'],
+      connections: ['Flask (cache, sessions)', 'Celery (broker DB1, results DB2)', 'Rate limiter'],
+      tags: [['DB0 Cache', 'purple'], ['DB1 Broker', 'purple'], ['DB2 Results', 'purple']]
+    }},
+  { id: 'chromadb', label: 'ChromaDB', sub: 'Vector Store / RAG', layer: 'purple', x: 0.62, y: 0.72,
+    detail: {
+      desc: 'ChromaDB vector database for RAG (Retrieval-Augmented Generation) chatbot. Stores document embeddings for network knowledge, troubleshooting guides, and device documentation. Used by /api/chat endpoint.',
+      files: ['core/chromadb_client.py', 'data/chromadb/'],
+      connections: ['/api/chat (vector search)', 'LLM (context injection)', 'Document ingestion'],
+      tags: [['Embeddings', 'purple'], ['RAG', 'purple'], ['Vectors', 'purple']]
+    }},
+  { id: 'files', label: 'File Stores', sub: 'Configs / Baselines', layer: 'purple', x: 0.85, y: 0.72,
+    detail: {
+      desc: 'File-based persistent storage: config_backups/ (pre/post-change running configs), golden_configs/ (compliance baselines), baselines/ (network state snapshots), evidence_packs/ (audit evidence), event_log.json (append-only audit trail).',
+      files: ['data/config_backups/', 'data/golden_configs/', 'data/baselines/', 'data/evidence_packs/', 'data/event_log.json', 'core/event_logger.py'],
+      connections: ['Compliance engine (golden configs)', 'Backup/rollback', 'Audit trail', 'Evidence packs'],
+      tags: [['config_backups/', 'purple'], ['golden_configs/', 'purple'], ['event_log.json', 'purple']]
+    }},
+
+  // ── Agent ──
+  { id: 'perception', label: 'Perception', sub: 'Health Poller / Events', layer: 'coral', x: 0.15, y: 0.9,
+    detail: {
+      desc: 'Agent perception layer: Health poller runs every 30s checking all devices. Change detector monitors running-config diffs. Event ingestor normalizes events from syslog, health poller, SNMP, and API into PerceivedEvent schema.',
+      files: ['agents/perception/health_poller.py', 'agents/perception/change_detector.py', 'agents/perception/event_ingestor.py'],
+      connections: ['Network devices (health polls)', 'Event ingestor (normalization)', 'Reasoning layer (event queue)'],
+      tags: [['30s Poll', 'coral'], ['Syslog', 'coral'], ['Config Diff', 'coral']]
+    }},
+  { id: 'reasoning', label: 'Reasoning', sub: 'Decision Engine / RCA', layer: 'coral', x: 0.38, y: 0.9,
+    detail: {
+      desc: 'Agent reasoning layer: Decision engine processes PerceivedEvents, consults CCIE knowledge base, proposes remediation actions with risk/confidence scores. RCA analyzer traces root causes through dependency graph. Risk assessor calculates blast radius.',
+      files: ['agents/reasoning/decision_engine.py', 'agents/reasoning/rca_analyzer.py', 'agents/reasoning/risk_assessor.py', 'agents/knowledge/'],
+      connections: ['Perception (event queue)', 'CCIE knowledge base', 'Validation layer (proposed actions)', 'agent.db (decisions)'],
+      tags: [['CCIE KB', 'coral'], ['Risk Score', 'coral'], ['RCA', 'coral']]
+    }},
+  { id: 'validation', label: 'Validation', sub: 'Drift / Audit', layer: 'coral', x: 0.62, y: 0.9,
+    detail: {
+      desc: 'Agent validation layer: Validator runs pre-execution checks and config syntax validation. Drift detector monitors continuous compliance and detects configuration drift. Auditor logs all decisions, tracks human approvals, maintains audit trail.',
+      files: ['agents/validation/validator.py', 'agents/validation/continuous.py', 'agents/validation/auditor.py', 'agents/db/models.py'],
+      connections: ['Reasoning (proposed actions)', 'Network devices (execute)', 'agent.db (audit log)', 'Dashboard (approval UI)'],
+      tags: [['Pre-checks', 'coral'], ['Drift', 'coral'], ['Audit', 'coral']]
+    }},
+
+  // ── Workers ──
+  { id: 'celery', label: 'Celery Workers', sub: '3 Queues / 10 Workers', layer: 'cyan', x: 0.85, y: 0.9,
+    detail: {
+      desc: 'Celery distributed task queue with Redis broker. 3 task queues: health (device checks), commands (bulk operations), config (provisioning). Worker concurrency: 10. Results stored in Redis DB2 with 1h TTL.',
+      files: ['core/celery_app.py', 'core/tasks.py', 'core/task_runner.py'],
+      connections: ['Redis DB1 (broker)', 'Redis DB2 (results)', 'Flask API (task submission)', 'Network devices (execution)'],
+      tags: [['health queue', 'cyan'], ['commands queue', 'cyan'], ['config queue', 'cyan']]
+    }},
+
+  // ── Credentials ──
+  { id: 'vault', label: 'Vault / .env', sub: 'Credentials', layer: 'green', x: 0.06, y: 0.38,
+    detail: {
+      desc: 'Credential management: HashiCorp Vault in production, .env file in development. 5-minute TTL cache in config/devices.py. Auto-invalidated after config changes. Provides device SSH credentials, API keys, and secrets.',
+      files: ['config/vault_client.py', 'config/devices.py', '.env'],
+      connections: ['Flask API (device auth)', 'SSH/NETCONF (credentials)', 'Agent (device access)'],
+      tags: [['Vault', 'green'], ['.env', 'green'], ['5min TTL', 'green']]
+    }},
+];
+
+// ── CONNECTIONS ──
+// flow: which flow-filter this belongs to
+const CONNECTIONS = [
+  // Request flow
+  { from: 'react', to: 'flask', flow: 'request', color: 'blue' },
+  { from: 'flask', to: 'auth', flow: 'request', color: 'green' },
+  { from: 'flask', to: 'routes', flow: 'request', color: 'green' },
+  { from: 'flask', to: 'ssh', flow: 'request', color: 'green' },
+  { from: 'flask', to: 'clab', flow: 'request', color: 'green' },
+  { from: 'flask', to: 'netconf', flow: 'request', color: 'green' },
+  { from: 'ssh', to: 'eveng', flow: 'request', color: 'orange' },
+  { from: 'clab', to: 'clabdevs', flow: 'request', color: 'orange' },
+  { from: 'netconf', to: 'eveng', flow: 'request', color: 'orange' },
+  { from: 'flask', to: 'redis', flow: 'request', color: 'green' },
+  { from: 'vault', to: 'ssh', flow: 'request', color: 'green' },
+  { from: 'vault', to: 'clab', flow: 'request', color: 'green' },
+
+  // Telemetry flow
+  { from: 'eveng', to: 'mdt', flow: 'telemetry', color: 'cyan' },
+  { from: 'mdt', to: 'flask', flow: 'telemetry', color: 'cyan' },
+  { from: 'flask', to: 'react', flow: 'telemetry', color: 'cyan' },
+
+  // Agent flow
+  { from: 'perception', to: 'eveng', flow: 'agent', color: 'coral' },
+  { from: 'perception', to: 'clabdevs', flow: 'agent', color: 'coral' },
+  { from: 'perception', to: 'reasoning', flow: 'agent', color: 'coral' },
+  { from: 'reasoning', to: 'validation', flow: 'agent', color: 'coral' },
+  { from: 'validation', to: 'sqlite', flow: 'agent', color: 'coral' },
+  { from: 'reasoning', to: 'sqlite', flow: 'agent', color: 'coral' },
+
+  // Background workers
+  { from: 'flask', to: 'celery', flow: 'background', color: 'cyan' },
+  { from: 'celery', to: 'redis', flow: 'background', color: 'cyan' },
+  { from: 'celery', to: 'eveng', flow: 'background', color: 'cyan' },
+  { from: 'celery', to: 'clabdevs', flow: 'background', color: 'cyan' },
+
+  // RAG chat
+  { from: 'react', to: 'flask', flow: 'rag', color: 'purple' },
+  { from: 'flask', to: 'chromadb', flow: 'rag', color: 'purple' },
+
+  // Storage connections (always shown dimly)
+  { from: 'flask', to: 'sqlite', flow: 'all', color: 'purple' },
+  { from: 'flask', to: 'files', flow: 'all', color: 'purple' },
+];
+
+// ════════════════════════════════════════════
+//  RENDERER
+// ════════════════════════════════════════════
+
+const svg = document.getElementById('flowSvg');
+const NS = 'http://www.w3.org/2000/svg';
+let W, H;
+let activeFlow = 'all';
+let selectedNode = null;
+let animFrameId = null;
+let particles = [];
+
+const COLOR_MAP = {
+  blue: '#3b82f6',
+  green: '#22c55e',
+  orange: '#f59e0b',
+  purple: '#a855f7',
+  coral: '#f43f5e',
+  cyan: '#06b6d4',
+};
+
+const COLOR_DIM = {
+  blue: '#1e3a5f',
+  green: '#14532d',
+  orange: '#713f12',
+  purple: '#581c87',
+  coral: '#881337',
+  cyan: '#164e63',
+};
+
+const COLOR_SURFACE = {
+  blue: '#0c1929',
+  green: '#0a1f12',
+  orange: '#1c1508',
+  purple: '#14081f',
+  coral: '#1a0810',
+  cyan: '#081a1f',
+};
+
+function el(tag, attrs = {}) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  return e;
+}
+
+function measure() {
+  const r = svg.getBoundingClientRect();
+  W = r.width;
+  H = r.height;
+}
+
+function nodePos(n) {
+  return { x: n.x * W, y: n.y * H };
+}
+
+// ── Build defs ──
+function buildDefs() {
+  const defs = el('defs');
+
+  // Glow filters
+  for (const [name, color] of Object.entries(COLOR_MAP)) {
+    const f = el('filter', { id: `glow-${name}`, x: '-50%', y: '-50%', width: '200%', height: '200%' });
+    const gb = el('feGaussianBlur', { stdDeviation: '4', result: 'blur' });
+    const fl = el('feFlood', { 'flood-color': color, 'flood-opacity': '0.6', result: 'color' });
+    const comp = el('feComposite', { in: 'color', in2: 'blur', operator: 'in', result: 'glow' });
+    const merge = el('feMerge');
+    const mn1 = el('feMergeNode', { in: 'glow' });
+    const mn2 = el('feMergeNode', { in: 'SourceGraphic' });
+    merge.append(mn1, mn2);
+    f.append(gb, fl, comp, merge);
+    defs.append(f);
+  }
+
+  // Grid pattern
+  const pat = el('pattern', { id: 'grid', width: '40', height: '40', patternUnits: 'userSpaceOnUse' });
+  pat.append(
+    el('line', { x1: '40', y1: '0', x2: '40', y2: '40', stroke: '#111827', 'stroke-width': '0.5' }),
+    el('line', { x1: '0', y1: '40', x2: '40', y2: '40', stroke: '#111827', 'stroke-width': '0.5' })
+  );
+  defs.append(pat);
+
+  svg.append(defs);
+}
+
+// ── Background ──
+function buildBackground() {
+  const bg = el('rect', { width: '100%', height: '100%', fill: 'url(#grid)' });
+  svg.append(bg);
+}
+
+// ── Connections ──
+const connectionEls = [];
+
+function buildConnections() {
+  const g = el('g', { id: 'connections-layer' });
+  CONNECTIONS.forEach((conn, i) => {
+    const line = el('path', {
+      id: `conn-${i}`,
+      class: 'flow-line',
+      stroke: COLOR_MAP[conn.color],
+      'data-flow': conn.flow,
+    });
+    g.append(line);
+    connectionEls.push({ el: line, conn, index: i });
+  });
+  svg.append(g);
+}
+
+function updateConnectionPaths() {
+  connectionEls.forEach(({ el: line, conn }) => {
+    const from = NODES.find(n => n.id === conn.from);
+    const to = NODES.find(n => n.id === conn.to);
+    if (!from || !to) return;
+    const p1 = nodePos(from);
+    const p2 = nodePos(to);
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const mx = (p1.x + p2.x) / 2;
+    const my = (p1.y + p2.y) / 2;
+
+    // Curve control
+    let cx, cy;
+    if (Math.abs(dy) > Math.abs(dx)) {
+      cx = mx + dx * 0.3;
+      cy = my;
+    } else {
+      cx = mx;
+      cy = my + dy * 0.3;
+    }
+
+    line.setAttribute('d', `M${p1.x},${p1.y} Q${cx},${cy} ${p2.x},${p2.y}`);
+  });
+}
+
+function updateConnectionVisibility() {
+  connectionEls.forEach(({ el: line, conn }) => {
+    const show = activeFlow === 'all' || conn.flow === activeFlow || conn.flow === 'all';
+    const isActive = activeFlow === 'all' ? true : conn.flow === activeFlow;
+    line.classList.toggle('active', show && isActive);
+    line.style.opacity = show ? (isActive ? '0.55' : '0.1') : '0.05';
+  });
+}
+
+// ── Particles ──
+function spawnParticles() {
+  particles = [];
+  connectionEls.forEach(({ el: pathEl, conn, index }) => {
+    const show = activeFlow === 'all' || conn.flow === activeFlow;
+    if (!show || conn.flow === 'all') return;
+    const len = pathEl.getTotalLength();
+    if (len < 10) return;
+
+    const count = activeFlow === 'all' ? 1 : 2;
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        pathEl,
+        color: COLOR_MAP[conn.color],
+        len,
+        offset: Math.random(),
+        speed: (0.15 + Math.random() * 0.15) / Math.max(len / 300, 1),
+      });
+    }
+  });
+}
+
+const particleLayer = el('g', { id: 'particle-layer' });
+function animateParticles() {
+  while (particleLayer.firstChild) particleLayer.firstChild.remove();
+
+  particles.forEach(p => {
+    p.offset += p.speed;
+    if (p.offset > 1) p.offset -= 1;
+
+    try {
+      const pt = p.pathEl.getPointAtLength(p.offset * p.len);
+      const dot = el('circle', {
+        cx: pt.x,
+        cy: pt.y,
+        r: '2.5',
+        fill: p.color,
+        opacity: String(0.5 + Math.sin(p.offset * Math.PI) * 0.5),
+        filter: `drop-shadow(0 0 3px ${p.color})`,
+      });
+      particleLayer.append(dot);
+    } catch(e) {}
+  });
+
+  animFrameId = requestAnimationFrame(animateParticles);
+}
+
+// ── Nodes ──
+const nodeEls = {};
+const NODE_W = 160;
+const NODE_H = 52;
+const NODE_R = 10;
+
+function buildNodes() {
+  const g = el('g', { id: 'nodes-layer' });
+
+  NODES.forEach(n => {
+    const group = el('g', { class: 'node-group', 'data-id': n.id });
+
+    // Outer glow ring (hidden until selected)
+    const ring = el('rect', {
+      class: 'node-ring',
+      x: '-6', y: '-6',
+      width: NODE_W + 12, height: NODE_H + 12,
+      rx: NODE_R + 4,
+      fill: 'none',
+      stroke: COLOR_MAP[n.layer],
+      'stroke-width': '1.5',
+      'stroke-dasharray': '4 4',
+      opacity: '0',
+    });
+
+    // Background
+    const bg = el('rect', {
+      class: 'node-bg',
+      width: NODE_W, height: NODE_H,
+      rx: NODE_R,
+      fill: COLOR_SURFACE[n.layer],
+      stroke: COLOR_DIM[n.layer],
+      'stroke-width': '1',
+    });
+
+    // Accent bar
+    const accent = el('rect', {
+      x: '0', y: '0',
+      width: '3', height: NODE_H,
+      rx: '1.5',
+      fill: COLOR_MAP[n.layer],
+      opacity: '0.8',
+    });
+
+    // Label
+    const label = el('text', {
+      class: 'node-label',
+      x: '14', y: '21',
+      fill: '#e2e6f0',
+      'font-family': "'JetBrains Mono', monospace",
+      'font-size': '12',
+      'font-weight': '600',
+    });
+    label.textContent = n.label;
+
+    // Sublabel
+    const sub = el('text', {
+      x: '14', y: '38',
+      fill: '#4a5168',
+      'font-family': "'DM Sans', sans-serif",
+      'font-size': '10',
+    });
+    sub.textContent = n.sub;
+
+    // Status dot
+    const status = el('circle', {
+      cx: NODE_W - 14, cy: NODE_H / 2,
+      r: '3',
+      fill: COLOR_MAP[n.layer],
+      opacity: '0.6',
+    });
+
+    group.append(ring, bg, accent, label, sub, status);
+    group.addEventListener('click', () => openDetail(n));
+    g.append(group);
+    nodeEls[n.id] = group;
+  });
+
+  svg.append(g);
+}
+
+function positionNodes() {
+  NODES.forEach(n => {
+    const p = nodePos(n);
+    const group = nodeEls[n.id];
+    group.setAttribute('transform', `translate(${p.x - NODE_W/2}, ${p.y - NODE_H/2})`);
+  });
+}
+
+// ── Detail Panel ──
+const panel = document.getElementById('detailPanel');
+const detailTitle = document.getElementById('detailTitle');
+const detailBody = document.getElementById('detailBody');
+
+document.getElementById('detailClose').addEventListener('click', closeDetail);
+
+function openDetail(node) {
+  // Deselect old
+  if (selectedNode) {
+    const old = nodeEls[selectedNode];
+    if (old) old.classList.remove('selected');
+    old?.querySelector('.node-ring')?.setAttribute('opacity', '0');
+  }
+
+  selectedNode = node.id;
+  const group = nodeEls[node.id];
+  group.classList.add('selected');
+  group.querySelector('.node-ring').setAttribute('opacity', '1');
+
+  detailTitle.textContent = node.label;
+  detailTitle.style.color = COLOR_MAP[node.layer];
+
+  const d = node.detail;
+  let html = '';
+
+  // Tags
+  if (d.tags) {
+    html += '<div class="detail-section"><h3>Stack</h3><div>';
+    d.tags.forEach(([t, c]) => {
+      html += `<span class="detail-tag tag-${c}">${t}</span>`;
+    });
+    html += '</div></div>';
+  }
+
+  // Description
+  html += `<div class="detail-section"><h3>Description</h3><p>${d.desc}</p></div>`;
+
+  // Files
+  if (d.files) {
+    html += '<div class="detail-section"><h3>Key Files</h3><div class="file-list">';
+    d.files.forEach(f => {
+      html += `<span>›</span> ${f}<br>`;
+    });
+    html += '</div></div>';
+  }
+
+  // Connections
+  if (d.connections) {
+    html += '<div class="detail-section"><h3>Connections</h3><ul>';
+    d.connections.forEach(c => {
+      html += `<li>${c}</li>`;
+    });
+    html += '</ul></div>';
+  }
+
+  detailBody.innerHTML = html;
+  panel.classList.add('open');
+}
+
+function closeDetail() {
+  panel.classList.remove('open');
+  if (selectedNode) {
+    const group = nodeEls[selectedNode];
+    if (group) {
+      group.classList.remove('selected');
+      group.querySelector('.node-ring')?.setAttribute('opacity', '0');
+    }
+    selectedNode = null;
+  }
+}
+
+// ── Flow Buttons ──
+document.querySelectorAll('.flow-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFlow = btn.dataset.flow;
+    updateConnectionVisibility();
+    spawnParticles();
+  });
+});
+
+// ── Layer Labels ──
+function buildLayerLabels() {
+  const g = el('g', { id: 'layer-labels' });
+
+  const layers = [
+    { label: 'FRONTEND', y: 0.06, color: '#3b82f6' },
+    { label: 'API GATEWAY', y: 0.2, color: '#22c55e' },
+    { label: 'DEVICE COMMUNICATION', y: 0.38, color: '#f59e0b' },
+    { label: 'NETWORK DEVICES', y: 0.54, color: '#f59e0b' },
+    { label: 'DATA PERSISTENCE', y: 0.72, color: '#a855f7' },
+    { label: 'AGENT / WORKERS', y: 0.9, color: '#f43f5e' },
+  ];
+
+  layers.forEach(l => {
+    const t = el('text', {
+      x: '16',
+      y: String(l.y * H - 18),
+      fill: l.color,
+      opacity: '0.2',
+      'font-family': "'JetBrains Mono', monospace",
+      'font-size': '9',
+      'font-weight': '700',
+      'letter-spacing': '3',
+    });
+    t.textContent = l.label;
+    g.append(t);
+  });
+
+  svg.append(g);
+}
+
+// ── Init ──
+function init() {
+  measure();
+
+  // Clear
+  while (svg.firstChild) svg.firstChild.remove();
+
+  buildDefs();
+  buildBackground();
+  buildConnections();
+  updateConnectionPaths();
+  updateConnectionVisibility();
+  buildNodes();
+  positionNodes();
+  buildLayerLabels();
+
+  svg.append(particleLayer);
+  spawnParticles();
+
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  animateParticles();
+}
+
+function handleResize() {
+  measure();
+  updateConnectionPaths();
+  positionNodes();
+
+  // Reposition layer labels
+  const labelGroup = document.getElementById('layer-labels');
+  if (labelGroup) {
+    const layers = [
+      { label: 'FRONTEND', y: 0.06 },
+      { label: 'API GATEWAY', y: 0.2 },
+      { label: 'DEVICE COMMUNICATION', y: 0.38 },
+      { label: 'NETWORK DEVICES', y: 0.54 },
+      { label: 'DATA PERSISTENCE', y: 0.72 },
+      { label: 'AGENT / WORKERS', y: 0.9 },
+    ];
+    const texts = labelGroup.querySelectorAll('text');
+    texts.forEach((t, i) => {
+      if (layers[i]) t.setAttribute('y', String(layers[i].y * H - 18));
+    });
+  }
+}
+
+window.addEventListener('resize', handleResize);
+
+// Close panel on escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDetail();
+});
+
+// Click outside nodes to deselect
+svg.addEventListener('click', e => {
+  if (!e.target.closest('.node-group')) {
+    closeDetail();
+  }
+});
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+---
+# Linux host specific variables
+ansible_connection: ssh
+ansible_shell_type: sh
+ansible_become: yes
+ansible_become_method: doas

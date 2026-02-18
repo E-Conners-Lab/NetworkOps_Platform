@@ -1,0 +1,75 @@
+---
+- name: Deploy configuration changes
+  hosts: "{{ target_hosts | default('cisco_routers') }}"
+  gather_facts: false
+  serial: 1
+
+  vars:
+    config_file: "{{ config_path | default('') }}"
+    config_commands: "{{ commands | default([]) }}"
+
+  pre_tasks:
+    - name: Validate inputs
+      ansible.builtin.fail:
+        msg: "Must provide either config_path or commands variable"
+      when: config_file == '' and config_commands | length == 0
+
+  tasks:
+    - name: Backup current config before changes
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: pre_change_config
+
+    - name: Save pre-change config
+      delegate_to: localhost
+      ansible.builtin.copy:
+        content: "{{ pre_change_config.stdout[0] }}"
+        dest: "/tmp/{{ inventory_hostname }}_pre_change.cfg"
+        mode: '0644'
+
+    - name: Apply configuration from file
+      when: config_file != ''
+      cisco.ios.ios_config:
+        src: "{{ config_file }}"
+        save_when: modified
+      register: file_changes
+
+    - name: Apply configuration commands
+      when: config_commands | length > 0
+      cisco.ios.ios_config:
+        lines: "{{ config_commands }}"
+        save_when: modified
+      register: command_changes
+
+    - name: Get post-change config
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: post_change_config
+
+    - name: Save post-change config
+      delegate_to: localhost
+      ansible.builtin.copy:
+        content: "{{ post_change_config.stdout[0] }}"
+        dest: "/tmp/{{ inventory_hostname }}_post_change.cfg"
+        mode: '0644'
+
+    - name: Generate diff
+      delegate_to: localhost
+      ansible.builtin.command:
+        cmd: "diff -u /tmp/{{ inventory_hostname }}_pre_change.cfg /tmp/{{ inventory_hostname }}_post_change.cfg"
+      register: config_diff
+      changed_when: false
+      failed_when: false
+
+    - name: Display changes
+      ansible.builtin.debug:
+        msg: |
+          === Configuration Changes for {{ inventory_hostname }} ===
+          {{ config_diff.stdout | default('No changes detected') }}
+
+  handlers:
+    - name: Save configuration
+      cisco.ios.ios_config:
+        save_when: always

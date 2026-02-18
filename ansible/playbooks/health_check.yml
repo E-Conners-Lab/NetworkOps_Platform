@@ -1,0 +1,161 @@
+---
+- name: Health check - Cisco devices
+  hosts: cisco_routers:cisco_switches
+  gather_facts: false
+
+  vars:
+    report_dir: "{{ playbook_dir }}/../../reports"
+
+  tasks:
+    - name: Create report directory
+      delegate_to: localhost
+      run_once: true
+      ansible.builtin.file:
+        path: "{{ report_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check device reachability
+      cisco.ios.ios_command:
+        commands:
+          - show version | include uptime
+      register: uptime
+      ignore_errors: true
+
+    - name: Get interface status
+      cisco.ios.ios_command:
+        commands:
+          - show ip interface brief
+      register: interfaces
+
+    - name: Get OSPF neighbors (routers only)
+      cisco.ios.ios_command:
+        commands:
+          - show ip ospf neighbor
+      register: ospf_neighbors
+      when: "'Switch' not in inventory_hostname"
+      ignore_errors: true
+
+    - name: Get EIGRP neighbors
+      cisco.ios.ios_command:
+        commands:
+          - show ip eigrp neighbors
+      register: eigrp_neighbors
+      ignore_errors: true
+
+    - name: Get BGP summary (R3 only)
+      cisco.ios.ios_command:
+        commands:
+          - show ip bgp summary
+      register: bgp_summary
+      when: inventory_hostname == 'R3'
+      ignore_errors: true
+
+    - name: Display health status
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} Health Check ===
+          Uptime: {{ uptime.stdout[0] | default('UNREACHABLE') }}
+
+          Interfaces:
+          {{ interfaces.stdout[0] | default('N/A') }}
+
+          {% if ospf_neighbors is defined and ospf_neighbors.stdout is defined %}
+          OSPF Neighbors:
+          {{ ospf_neighbors.stdout[0] | default('N/A') }}
+          {% endif %}
+
+          EIGRP Neighbors:
+          {{ eigrp_neighbors.stdout[0] | default('N/A') }}
+
+          {% if bgp_summary is defined and bgp_summary.stdout is defined %}
+          BGP Summary:
+          {{ bgp_summary.stdout[0] }}
+          {% endif %}
+
+
+- name: Health check - Linux hosts
+  hosts: linux_hosts
+  gather_facts: false
+
+  tasks:
+    - name: Check uptime
+      ansible.builtin.command: uptime
+      register: uptime
+      changed_when: false
+
+    - name: Check memory
+      ansible.builtin.command: free -m
+      register: memory
+      changed_when: false
+
+    - name: Check disk
+      ansible.builtin.command: df -h
+      register: disk
+      changed_when: false
+
+    - name: Check network interfaces
+      ansible.builtin.command: ip addr show
+      register: network
+      changed_when: false
+
+    - name: Display health status
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} Health Check ===
+          {{ uptime.stdout }}
+
+          Memory:
+          {{ memory.stdout }}
+
+          Disk:
+          {{ disk.stdout }}
+
+          Network:
+          {{ network.stdout }}
+
+
+- name: Health check - Containerlab devices
+  hosts: containerlab
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Check container status
+      ansible.builtin.command:
+        cmd: "multipass exec {{ containerlab_vm }} -- sudo docker inspect -f '{{ '{{' }}.State.Status{{ '}}' }}' {{ container_name }}"
+      register: container_status
+      changed_when: false
+      ignore_errors: true
+
+    - name: Check FRR status
+      when: containerlab_type is defined and containerlab_type == 'frr'
+      ansible.builtin.command:
+        cmd: "multipass exec {{ containerlab_vm }} -- sudo docker exec {{ container_name }} vtysh -c 'show ip bgp summary'"
+      register: frr_bgp
+      changed_when: false
+      ignore_errors: true
+
+    - name: Check SR Linux interfaces
+      when: containerlab_type is defined and containerlab_type == 'srlinux'
+      ansible.builtin.command:
+        cmd: "multipass exec {{ containerlab_vm }} -- sudo docker exec {{ container_name }} sr_cli 'show interface brief'"
+      register: srlinux_intf
+      changed_when: false
+      ignore_errors: true
+
+    - name: Display containerlab health
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} Health Check ===
+          Container Status: {{ container_status.stdout | default('UNKNOWN') }}
+
+          {% if frr_bgp is defined and frr_bgp.stdout is defined %}
+          BGP Summary:
+          {{ frr_bgp.stdout }}
+          {% endif %}
+
+          {% if srlinux_intf is defined and srlinux_intf.stdout is defined %}
+          Interfaces:
+          {{ srlinux_intf.stdout }}
+          {% endif %}

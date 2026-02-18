@@ -1,0 +1,104 @@
+name: Deploy Configuration
+
+on:
+  workflow_dispatch:
+    inputs:
+      playbook:
+        description: 'Playbook to run'
+        required: true
+        type: choice
+        options:
+          - backup_configs.yml
+          - health_check.yml
+          - deploy_changes.yml
+          - compliance_check.yml
+      target_hosts:
+        description: 'Target hosts (e.g., cisco_routers, R1, R1:R2)'
+        required: false
+        default: 'cisco_routers'
+      extra_vars:
+        description: 'Extra variables (JSON format)'
+        required: false
+        default: '{}'
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: production
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Ansible collections
+        run: |
+          source .venv/bin/activate
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Verify lab connectivity
+        run: |
+          if ! ping -c 3 -W 2 10.255.255.11 > /dev/null 2>&1; then
+            echo "::error::Lab is not reachable. Aborting deployment."
+            exit 1
+          fi
+          echo "Lab connectivity verified"
+
+      - name: Create backup before deployment
+        if: inputs.playbook == 'deploy_changes.yml'
+        env:
+          DEVICE_USERNAME: ${{ secrets.DEVICE_USERNAME }}
+          DEVICE_PASSWORD: ${{ secrets.DEVICE_PASSWORD }}
+        run: |
+          source .venv/bin/activate
+          cd ansible
+          ansible-playbook playbooks/backup_configs.yml --limit "${{ inputs.target_hosts }}"
+
+      - name: Run playbook
+        env:
+          DEVICE_USERNAME: ${{ secrets.DEVICE_USERNAME }}
+          DEVICE_PASSWORD: ${{ secrets.DEVICE_PASSWORD }}
+        run: |
+          source .venv/bin/activate
+          cd ansible
+
+          # Parse extra vars
+          EXTRA_VARS='${{ inputs.extra_vars }}'
+          if [ "$EXTRA_VARS" != "{}" ]; then
+            EXTRA_ARGS="--extra-vars '$EXTRA_VARS'"
+          else
+            EXTRA_ARGS=""
+          fi
+
+          # Run the playbook with diff mode
+          ansible-playbook playbooks/${{ inputs.playbook }} \
+            --limit "${{ inputs.target_hosts }}" \
+            --diff \
+            $EXTRA_ARGS \
+            -v
+
+      - name: Post-deployment health check
+        if: inputs.playbook == 'deploy_changes.yml'
+        env:
+          DEVICE_USERNAME: ${{ secrets.DEVICE_USERNAME }}
+          DEVICE_PASSWORD: ${{ secrets.DEVICE_PASSWORD }}
+        run: |
+          source .venv/bin/activate
+          cd ansible
+          ansible-playbook playbooks/health_check.yml --limit "${{ inputs.target_hosts }}"
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-logs
+          path: |
+            ansible/*.log
+            /tmp/*_change.cfg
+          retention-days: 7

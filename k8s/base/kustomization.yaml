@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: networkops-base
+
+namespace: networkops
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/name: networkops
+  app.kubernetes.io/managed-by: kustomize
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - redis-deployment.yaml
+  - postgres-deployment.yaml
+  - api-deployment.yaml
+  - celery-deployment.yaml
+  - services.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - pdb.yaml
+
+# Image customization (override in overlays)
+images:
+  - name: networkops-api
+    newTag: latest
+  - name: networkops-worker
+    newTag: latest

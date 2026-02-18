@@ -1,0 +1,30 @@
+# Pod Disruption Budgets ensure high availability during cluster maintenance
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-pdb
+  namespace: networkops
+  labels:
+    app.kubernetes.io/name: networkops
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: networkops
+      app.kubernetes.io/component: api
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: celery-worker-pdb
+  namespace: networkops
+  labels:
+    app.kubernetes.io/name: networkops
+    app.kubernetes.io/component: celery-worker
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: networkops
+      app.kubernetes.io/component: celery-worker

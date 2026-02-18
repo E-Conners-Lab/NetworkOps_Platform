@@ -1,0 +1,74 @@
+---
+- name: Update device banners
+  hosts: "{{ target_hosts | default('cisco_routers:cisco_switches') }}"
+  gather_facts: false
+  serial: 1
+
+  vars:
+    motd_banner: "{{ motd | default('') }}"
+    login_banner: "{{ login | default('') }}"
+    exec_banner: "{{ exec | default('') }}"
+
+  pre_tasks:
+    - name: Validate inputs
+      ansible.builtin.fail:
+        msg: "Must provide at least one of: motd, login, or exec banner text"
+      when: motd_banner == '' and login_banner == '' and exec_banner == ''
+
+  tasks:
+    - name: Get current banners
+      cisco.ios.ios_command:
+        commands:
+          - show running-config | section banner
+      register: current_banners
+
+    - name: Display current banners
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} Current Banners ===
+          {{ current_banners.stdout[0] | default('No banners configured') }}
+
+    - name: Update MOTD banner
+      when: motd_banner != ''
+      cisco.ios.ios_banner:
+        banner: motd
+        text: "{{ motd_banner }}"
+        state: present
+      register: motd_result
+
+    - name: Update login banner
+      when: login_banner != ''
+      cisco.ios.ios_banner:
+        banner: login
+        text: "{{ login_banner }}"
+        state: present
+      register: login_result
+
+    - name: Update exec banner
+      when: exec_banner != ''
+      cisco.ios.ios_banner:
+        banner: exec
+        text: "{{ exec_banner }}"
+        state: present
+      register: exec_result
+
+    - name: Verify new banners
+      cisco.ios.ios_command:
+        commands:
+          - show running-config | section banner
+      register: new_banners
+
+    - name: Display update summary
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} Banner Update Summary ===
+          MOTD updated: {{ motd_result.changed | default(false) }}
+          Login updated: {{ login_result.changed | default(false) }}
+          Exec updated: {{ exec_result.changed | default(false) }}
+
+          New Banners:
+          {{ new_banners.stdout[0] }}
+
+    - name: Save configuration
+      cisco.ios.ios_config:
+        save_when: modified

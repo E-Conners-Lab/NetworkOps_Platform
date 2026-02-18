@@ -1,0 +1,16 @@
+role: edge-router
+description: "Edge routers connecting to external networks"
+applies_to: [R3, R6, R7]
+
+intent:
+  # Per-device OSPF neighbors differ — defined in overrides.
+  ospf_neighbors: []
+
+  bgp_peers: []
+
+  interfaces:
+    - name: "Loopback0"
+      expected_status: "up"
+      severity: critical
+
+  routes: []

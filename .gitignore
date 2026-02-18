@@ -1,0 +1,63 @@
+# Virtual environment
+.venv/
+venv/
+
+# IDE
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment files
+.env
+
+# Runtime data
+data/reports/
+data/rollback_states/
+data/*.db-shm
+data/*.db-wal
+
+# Jupyter checkpoints
+notebooks/.ipynb_checkpoints/
+
+# Claude Code context
+.claude/
+
+# Git worktrees
+worktrees/
+
+# Event log (contains runtime data)
+event_log.json
+data/event_log.json
+data/alerts.json
+
+# NetBox
+netbox/.env
+netbox/postgres-data/
+/tmp/netbox_inventory_cache/
+data/*.db
+dashboard/data/auth.db
+data/chromadb/
+data/backups/
+data/config_backups/
+
+# SSL certificates (never commit)
+nginx/ssl/
+*.key
+*.crt
+*.pem
+
+# Data directory (runtime generated files)
+data/benchmarks/
+data/security_reports/
+data/baselines/
+data/golden_configs/
+
+# Examples (manual test probes, not production code)
+examples/
+\!terraform-provider-networkops/examples/
+data/evidence_packs/
+logs/
+dump.rdb

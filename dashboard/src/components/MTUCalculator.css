@@ -1,0 +1,449 @@
+/* MTU Calculator Modal Styles */
+
+.mtu-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.mtu-modal {
+  background: #1e1e2e;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+}
+
+.mtu-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #2d2d44 0%, #1e1e2e 100%);
+  border-bottom: 1px solid #333;
+}
+
+.mtu-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.mtu-close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.mtu-close-btn:hover {
+  color: #fff;
+}
+
+/* Tabs */
+.mtu-tabs {
+  display: flex;
+  background: #252535;
+  border-bottom: 1px solid #333;
+}
+
+.mtu-tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.mtu-tab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mtu-tab.active {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+}
+
+/* Content */
+.mtu-modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Form */
+.mtu-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mtu-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mtu-form-row label {
+  font-size: 0.85rem;
+  color: #aaa;
+  font-weight: 500;
+}
+
+.mtu-form-row.checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ddd;
+  cursor: pointer;
+}
+
+.mtu-form-row.checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.mtu-hint {
+  font-size: 0.75rem;
+  color: #666;
+  margin-left: 8px;
+}
+
+.mtu-form-row select,
+.mtu-form-row input[type="text"],
+.mtu-form-row input[type="number"] {
+  padding: 10px 12px;
+  background: #2a2a3e;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.mtu-form-row select:focus,
+.mtu-form-row input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+}
+
+.mtu-form-row select option {
+  background: #2a2a3e;
+  color: #fff;
+}
+
+.mtu-form-divider {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.mtu-form-divider span {
+  font-size: 0.8rem;
+  color: #666;
+  padding: 0 12px;
+  background: #1e1e2e;
+  position: relative;
+}
+
+.mtu-form-divider::before,
+.mtu-form-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #333;
+}
+
+.mtu-calculate-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.mtu-calculate-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+}
+
+.mtu-calculate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Error */
+.mtu-error {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 0.9rem;
+  margin-top: 16px;
+}
+
+/* Results */
+.mtu-results {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #333;
+}
+
+.mtu-results h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.mtu-result-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.mtu-result-card {
+  background: #2a2a3e;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid #333;
+}
+
+.mtu-result-card.primary {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.mtu-result-label {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mtu-result-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mtu-result-card.primary .mtu-result-value {
+  color: #60a5fa;
+}
+
+.mtu-result-unit {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Breakdown table */
+.mtu-breakdown {
+  background: #252535;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.mtu-breakdown h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.mtu-breakdown table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mtu-breakdown td {
+  padding: 8px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #333;
+}
+
+.mtu-breakdown td:first-child {
+  color: #aaa;
+}
+
+.mtu-breakdown td:last-child {
+  text-align: right;
+  color: #fff;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}
+
+.mtu-breakdown tr.total td {
+  border-bottom: none;
+  padding-top: 12px;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+/* Warnings */
+.mtu-warnings {
+  margin-bottom: 16px;
+}
+
+.mtu-warning {
+  padding: 8px 12px;
+  background: rgba(250, 204, 21, 0.1);
+  border-left: 3px solid #facc15;
+  color: #fde047;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Config output */
+.mtu-config {
+  background: #0d1117;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #30363d;
+}
+
+.mtu-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+
+.mtu-config-header h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #8b949e;
+  font-weight: 500;
+}
+
+.mtu-copy-btn {
+  padding: 4px 12px;
+  background: #238636;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mtu-copy-btn:hover {
+  background: #2ea043;
+}
+
+.mtu-config pre {
+  margin: 0;
+  padding: 14px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.85rem;
+  color: #c9d1d9;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+/* Scenarios tab */
+.mtu-scenarios {
+  padding: 0;
+}
+
+.mtu-scenarios-intro {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.mtu-scenarios-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.mtu-scenarios-table th {
+  text-align: left;
+  padding: 12px;
+  background: #252535;
+  color: #888;
+  font-weight: 500;
+  border-bottom: 1px solid #333;
+}
+
+.mtu-scenarios-table th:not(:first-child) {
+  text-align: center;
+}
+
+.mtu-scenarios-table td {
+  padding: 12px;
+  border-bottom: 1px solid #2a2a3e;
+  color: #ddd;
+}
+
+.mtu-scenarios-table td:not(:first-child) {
+  text-align: center;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}
+
+.mtu-scenarios-table td strong {
+  color: #60a5fa;
+}
+
+.mtu-scenarios-table tr:hover {
+  background: rgba(96, 165, 250, 0.05);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .mtu-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .mtu-result-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .mtu-scenarios-table {
+    font-size: 0.8rem;
+  }
+
+  .mtu-scenarios-table th,
+  .mtu-scenarios-table td {
+    padding: 8px;
+  }
+}

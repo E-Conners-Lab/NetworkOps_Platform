@@ -1,0 +1,81 @@
+{{- if .Values.celeryWorker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "networkops.fullname" . }}-celery-worker
+  labels:
+    {{- include "networkops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-worker
+spec:
+  {{- if not .Values.celeryWorker.autoscaling.enabled }}
+  replicas: {{ .Values.celeryWorker.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "networkops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: celery-worker
+  template:
+    metadata:
+      labels:
+        {{- include "networkops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: celery-worker
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "networkops.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      containers:
+        - name: worker
+          image: "{{ .Values.celeryWorker.image.repository }}:{{ .Values.celeryWorker.image.tag }}"
+          imagePullPolicy: {{ .Values.celeryWorker.image.pullPolicy }}
+          command: ["celery", "-A", "core.celery_app", "worker", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "networkops.fullname" . }}-config
+            - secretRef:
+                name: {{ include "networkops.fullname" . }}-secrets
+          resources:
+            {{- toYaml .Values.celeryWorker.resources | nindent 12 }}
+{{- end }}
+---
+{{- if .Values.celeryBeat.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "networkops.fullname" . }}-celery-beat
+  labels:
+    {{- include "networkops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-beat
+spec:
+  replicas: {{ .Values.celeryBeat.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "networkops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: celery-beat
+  template:
+    metadata:
+      labels:
+        {{- include "networkops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: celery-beat
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "networkops.serviceAccountName" . }}
+      containers:
+        - name: beat
+          image: "{{ .Values.celeryWorker.image.repository }}:{{ .Values.celeryWorker.image.tag }}"
+          imagePullPolicy: {{ .Values.celeryWorker.image.pullPolicy }}
+          command: ["celery", "-A", "core.celery_app", "beat", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "networkops.fullname" . }}-config
+            - secretRef:
+                name: {{ include "networkops.fullname" . }}-secrets
+          resources:
+            {{- toYaml .Values.celeryBeat.resources | nindent 12 }}
+{{- end }}

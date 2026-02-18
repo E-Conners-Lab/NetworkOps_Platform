@@ -1,0 +1,21 @@
+// Cisco MDT gRPC Dial-Out Service
+// For streaming telemetry from IOS-XE devices
+
+syntax = "proto3";
+
+package mdt_dialout;
+
+import "telemetry.proto";
+
+// gRPC service for dial-out telemetry
+service gRPCMdtDialout {
+    // Bidirectional streaming RPC for telemetry data
+    rpc MdtDialout(stream MdtDialoutArgs) returns (stream MdtDialoutArgs) {}
+}
+
+// Message wrapper for dial-out telemetry
+message MdtDialoutArgs {
+    int64 ReqId = 1;
+    bytes data = 2;
+    string errors = 3;
+}

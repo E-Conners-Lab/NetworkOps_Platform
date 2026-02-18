@@ -1,0 +1,52 @@
+---
+- name: Run pyATS compliance checks
+  hosts: cisco_routers:cisco_switches
+  gather_facts: false
+  connection: local
+
+  vars:
+    project_root: "{{ playbook_dir }}/../.."
+    template: "default"
+
+  tasks:
+    - name: Run pyATS compliance check
+      ansible.builtin.command:
+        cmd: "python3 -c \"
+import sys
+sys.path.insert(0, '{{ project_root }}')
+from scripts.pyats_tools import check_compliance
+result = check_compliance('{{ inventory_hostname }}', '{{ template }}')
+print(result)
+\""
+        chdir: "{{ project_root }}"
+      register: compliance_result
+      changed_when: false
+      ignore_errors: true
+      environment:
+        DEVICE_USERNAME: "{{ lookup('env', 'DEVICE_USERNAME') }}"
+        DEVICE_PASSWORD: "{{ lookup('env', 'DEVICE_PASSWORD') }}"
+
+    - name: Display compliance status
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} Compliance Check ===
+          {{ compliance_result.stdout | default('Check failed') }}
+
+    - name: Set compliance status
+      ansible.builtin.set_fact:
+        device_compliant: "{{ 'COMPLIANT' in compliance_result.stdout | default('') }}"
+
+    - name: Fail if non-compliant (when strict mode enabled)
+      when: strict_mode | default(false) | bool and not device_compliant
+      ansible.builtin.fail:
+        msg: "Device {{ inventory_hostname }} is NOT compliant"
+
+
+- name: Compliance summary
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Generate compliance report
+      ansible.builtin.debug:
+        msg: "Compliance checks complete. Review individual device results above."

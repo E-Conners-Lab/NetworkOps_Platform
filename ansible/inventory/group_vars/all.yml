@@ -1,0 +1,11 @@
+---
+# Credentials from environment variables
+ansible_user: "{{ lookup('env', 'DEVICE_USERNAME') | default('admin', true) }}"
+ansible_password: "{{ lookup('env', 'DEVICE_PASSWORD') | default('admin', true) }}"
+ansible_become_password: "{{ ansible_password }}"
+
+# SSH settings
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+# Timeouts
+ansible_command_timeout: 60

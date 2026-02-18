@@ -1,0 +1,9 @@
+---
+# Ansible-lint configuration
+
+skip_list:
+  - run-once[task]  # Valid pattern for delegate_to: localhost setup tasks
+
+# Warn instead of fail on yaml formatting issues
+warn_list:
+  - yaml[line-length]

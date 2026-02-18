@@ -1,0 +1,32 @@
+category,metric,baseline,phase1,phase2,phase3,unit
+Performance,Throughput,50,1400,1400,684,req/sec
+Performance,P50 Response,200,25,25,3.7,ms
+Performance,P95 Response,500,27,27,9.6,ms
+Performance,P99 Response,800,35,35,947,ms
+Performance,Cache Hit Rate,0,90,90,97.9,percent
+Capacity,Devices Tested,7,100,100,1000,count
+Capacity,Devices @ 1min Poll,7,100,100,1000,count
+Capacity,Devices @ 5min Poll,7,500,500,5000,count
+Capacity,Devices @ 15min Poll,7,1500,1500,15000,count
+Code,Files Changed,0,6,8,11,count
+Code,Lines Added,0,892,1673,1579,count
+Code,Commits,0,5,2,2,count
+Readiness,Core Functionality,75,85,85,85,percent
+Readiness,Scalability,30,50,70,75,percent
+Readiness,Security,25,35,40,55,percent
+Readiness,Reliability,15,20,30,35,percent
+Readiness,Observability,30,40,50,65,percent
+Readiness,Documentation,30,35,38,42,percent
+Readiness,Testing,15,20,22,35,percent
+Readiness,Overall,35,41,48,56,percent
+Features,Redis Caching,0,1,1,1,boolean
+Features,Connection Pooling,0,1,1,1,boolean
+Features,Rate Limiting,0,1,1,1,boolean
+Features,Async Jobs,0,0,1,1,boolean
+Features,Job Persistence,0,0,1,1,boolean
+Features,Health Endpoints,0,0,0,1,boolean
+Features,HTTPS/TLS,0,0,0,1,boolean
+Features,Nginx Proxy,0,0,0,1,boolean
+Features,Load Testing,0,1,1,1,boolean
+Services,Docker Services,1,1,6,9,count
+Endpoints,New API Endpoints,0,0,8,3,count

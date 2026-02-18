@@ -1,0 +1,27 @@
+# {{ hostname }} FRR Daemons
+zebra=yes
+bgpd={{ 'yes' if bgp_asn else 'no' }}
+ospfd={{ 'yes' if ospf_enabled else 'no' }}
+ospf6d=no
+ripd=no
+ripngd=no
+isisd=no
+pimd=no
+ldpd=no
+nhrpd=no
+eigrpd=no
+babeld=no
+sharpd=no
+staticd=no
+pbrd=no
+bfdd=no
+fabricd=no
+
+vtysh_enable=yes
+zebra_options="  -A 127.0.0.1 -s 90000000"
+{% if ospf_enabled %}
+ospfd_options="  -A 127.0.0.1"
+{% endif %}
+{% if bgp_asn %}
+bgpd_options="  -A 127.0.0.1"
+{% endif %}

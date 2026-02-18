@@ -1,0 +1,132 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # Fast API contract tests - no lab needed, runs on every PR
+  api-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install flask flask-cors flask-socketio flask-limiter flask-caching
+          pip install python-dotenv netmiko ncclient pynetbox pyjwt bcrypt flasgger
+          pip install pydantic pydantic-settings anthropic requests aiohttp tenacity hvac pyotp qrcode cryptography
+          pip install beautifulsoup4 lxml pymupdf redis apscheduler reportlab chromadb
+          pip install alembic sqlalchemy
+          pip install pytest pytest-asyncio pytest-cov
+
+      - name: Run API contract tests with coverage
+        env:
+          SKIP_DEVICE_TESTS: "true"
+        run: |
+          pytest tests/test_api_contracts.py -v --tb=short --cov=. --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true
+
+  # Lab connectivity tests - requires self-hosted runner with lab access
+  lab-connectivity:
+    runs-on: self-hosted
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        run: |
+          # Use Python 3.11 for pyATS compatibility (pyATS doesn't support 3.14 yet)
+          /opt/homebrew/bin/python3.11 -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          # Install pyATS/genie first to avoid resolution-too-deep error
+          # pyATS has an extremely complex dependency tree that exceeds pip's default resolver depth
+          pip install pyats genie
+          # Install Ansible separately to avoid conflicts
+          pip install 'ansible-core>=2.15,<2.17' 'ansible>=8.0,<10.0'
+          # Then install remaining project dependencies
+          pip install -r requirements.txt --no-deps || pip install -r requirements.txt
+
+      - name: Check lab reachability
+        id: lab-check
+        run: |
+          # Test if R1 is reachable (gateway to lab) - Isolated lab network
+          if ping -c 3 -W 2 10.255.255.11 > /dev/null 2>&1; then
+            echo "lab_reachable=true" >> $GITHUB_OUTPUT
+            echo "Lab is reachable"
+          else
+            echo "lab_reachable=false" >> $GITHUB_OUTPUT
+            echo "::warning::Lab is not reachable - skipping device tests"
+          fi
+
+      - name: Run health checks
+        if: steps.lab-check.outputs.lab_reachable == 'true'
+        env:
+          DEVICE_USERNAME: ${{ secrets.DEVICE_USERNAME }}
+          DEVICE_PASSWORD: ${{ secrets.DEVICE_PASSWORD }}
+          ANSIBLE_CONFIG: ${{ github.workspace }}/ansible/ansible.cfg
+        run: |
+          source .venv/bin/activate
+          cd ansible
+          ansible-galaxy collection install -r requirements.yml
+          ansible-playbook playbooks/health_check.yml --limit cisco_routers -v
+
+      - name: Run pyATS compliance
+        if: steps.lab-check.outputs.lab_reachable == 'true'
+        env:
+          DEVICE_USERNAME: ${{ secrets.DEVICE_USERNAME }}
+          DEVICE_PASSWORD: ${{ secrets.DEVICE_PASSWORD }}
+          ANSIBLE_CONFIG: ${{ github.workspace }}/ansible/ansible.cfg
+        run: |
+          source .venv/bin/activate
+          cd ansible
+          ansible-playbook playbooks/compliance_check.yml --limit R1,R2
+
+  containerlab-check:
+    runs-on: self-hosted
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check containerlab VM
+        id: clab-check
+        run: |
+          if multipass info containerlab > /dev/null 2>&1; then
+            echo "containerlab_running=true" >> $GITHUB_OUTPUT
+            echo "Containerlab VM is running"
+          else
+            echo "containerlab_running=false" >> $GITHUB_OUTPUT
+            echo "::warning::Containerlab VM not available"
+          fi
+
+      - name: Check container status
+        if: steps.clab-check.outputs.containerlab_running == 'true'
+        run: |
+          multipass exec containerlab -- sudo containerlab inspect --all
+
+      - name: Verify BGP peering
+        if: steps.clab-check.outputs.containerlab_running == 'true'
+        run: |
+          echo "=== Edge1 BGP Summary ==="
+          multipass exec containerlab -- sudo docker exec clab-datacenter-edge1 vtysh -c "show ip bgp summary"

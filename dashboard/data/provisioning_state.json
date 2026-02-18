@@ -1,0 +1,619 @@
+{
+  "updated_at": "2026-01-05T07:17:21.578768",
+  "jobs": [
+    {
+      "job_id": "prov-062de4b5",
+      "correlation_id": "corr-365c8709",
+      "device_name": "test-router",
+      "platform": "containerlab",
+      "status": "failed",
+      "step": "backup_topology",
+      "progress_pct": 25,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip"
+      ],
+      "steps_remaining": [
+        "backup_topology",
+        "modify_topology",
+        "deploy_node",
+        "wait_for_boot",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-04T23:31:37.952932",
+      "completed_at": "2026-01-04T23:31:38.174891",
+      "error": "[corr-365c8709] Failed to create backup: cp: cannot stat '/home/ubuntu/datacenter/datacenter.clab.yml': No such file or directory\n",
+      "rollback_actions": [],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": null
+    },
+    {
+      "job_id": "prov-6bf2e7d8",
+      "correlation_id": "corr-a1266aad",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "failed",
+      "step": "validate_inputs",
+      "progress_pct": 0,
+      "steps_completed": [],
+      "steps_remaining": [
+        "validate_inputs",
+        "allocate_ip",
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:03:50.492863",
+      "completed_at": "2026-01-05T05:03:52.509310",
+      "error": "[corr-a1266aad] Lab does not exist (60000).",
+      "rollback_actions": [],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": null
+    },
+    {
+      "job_id": "prov-b25125ca",
+      "correlation_id": "corr-8897fed6",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "create_node",
+      "progress_pct": 22,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip"
+      ],
+      "steps_remaining": [
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:06:05.204611",
+      "completed_at": "2026-01-05T05:06:09.542166",
+      "error": "[corr-8897fed6] Failed to create node 'R10': [corr-8897fed6] <html><head><title>Slim Application Error</title><style>body{margin:0;padding:30px;font:12px/1.5 Helvetica,Arial,Verdana,sans-serif;}h1{margin:0;font-size:48px;font-weight:normal;line-height:48px;}strong{display:inline-block;width:65px;}</style></head><body><h1>Slim Application Error</h1><p>The application could not run because of the following error:</p><h2>Details</h2><div><strong>Type:</strong> ErrorException</div><div><strong>Code:</strong> 2</div><div><strong>Message:</strong> Undefined array key \"left\"</div><div><strong>File:</strong> /opt/unetlab/html/includes/api_nodes.php</div><div><strong>Line:</strong> 37</div><h2>Trace</h2><pre><div>#0 /opt/unetlab/html/includes/api_nodes.php(37): Slim\\Slim::handleErrors()</div><div>#1 /opt/unetlab/html/api.php(4098): apiAddLabNode()</div><div>#2 [internal function]: {closure}()</div><div>#3 /opt/unetlab/html/includes/Slim/Route.php(468): call_user_func_array()</div><div>#4 /opt/unetlab/html/includes/Slim/Slim.php(1357): Slim\\Route->dispatch()</div><div>#5 /opt/unetlab/html/includes/Slim/Middleware/Flash.php(85): Slim\\Slim->call()</div><div>#6 /opt/unetlab/html/includes/Slim/Middleware/MethodOverride.php(92): Slim\\Middleware\\Flash->call()</div><div>#7 /opt/unetlab/html/includes/Slim/Middleware/PrettyExceptions.php(67): Slim\\Middleware\\MethodOverride->call()</div><div>#8 /opt/unetlab/html/includes/Slim/Slim.php(1302): Slim\\Middleware\\PrettyExceptions->call()</div><div>#9 /opt/unetlab/html/api.php(5719): Slim\\Slim->run()</div><div>#10 {main}</pre></body></html>",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2/24"
+        }
+      ],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2/24"
+    },
+    {
+      "job_id": "prov-d0eb10d0",
+      "correlation_id": "corr-99a5aedf",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "create_node",
+      "progress_pct": 22,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip"
+      ],
+      "steps_remaining": [
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:07:39.996465",
+      "completed_at": "2026-01-05T05:08:09.258180",
+      "error": "[corr-99a5aedf] Failed to create node 'R10': [corr-99a5aedf] Failed to lock the lab (60061).",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2/24"
+        }
+      ],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2/24"
+    },
+    {
+      "job_id": "prov-b8af2582",
+      "correlation_id": "corr-eda7ce06",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "create_node",
+      "progress_pct": 22,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip"
+      ],
+      "steps_remaining": [
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:09:39.961015",
+      "completed_at": "2026-01-05T05:10:09.520919",
+      "error": "[corr-eda7ce06] Failed to create node 'R10': [corr-eda7ce06] Failed to lock the lab (60061).",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2/24"
+        }
+      ],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2/24"
+    },
+    {
+      "job_id": "prov-b150ff1c",
+      "correlation_id": "corr-7b1eaa0a",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "failed",
+      "step": "validate_inputs",
+      "progress_pct": 0,
+      "steps_completed": [],
+      "steps_remaining": [
+        "validate_inputs",
+        "allocate_ip",
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:12:40.032134",
+      "completed_at": "2026-01-05T05:12:42.056148",
+      "error": "Management network 'pnet1' not found in lab",
+      "rollback_actions": [],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": null
+    },
+    {
+      "job_id": "prov-550f290d",
+      "correlation_id": "corr-f8f22057",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "create_node",
+      "progress_pct": 22,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip"
+      ],
+      "steps_remaining": [
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:15:02.543170",
+      "completed_at": "2026-01-05T05:15:32.000748",
+      "error": "[corr-f8f22057] Failed to create node 'R10': [corr-f8f22057] Failed to lock the lab (60061).",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2/24"
+        }
+      ],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2/24"
+    },
+    {
+      "job_id": "prov-32a5a3b5",
+      "correlation_id": "corr-6e753c7c",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "create_node",
+      "progress_pct": 22,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip"
+      ],
+      "steps_remaining": [
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:20:28.150824",
+      "completed_at": "2026-01-05T05:20:59.207734",
+      "error": "[corr-6e753c7c] Failed to create node 'R10': [corr-6e753c7c] Failed to lock the lab (60061).",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2/24"
+        }
+      ],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2/24"
+    },
+    {
+      "job_id": "prov-156e6711",
+      "correlation_id": "corr-53379e9f",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "create_node",
+      "progress_pct": 22,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip"
+      ],
+      "steps_remaining": [
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:27:00.359665",
+      "completed_at": "2026-01-05T05:27:28.043191",
+      "error": "[corr-53379e9f] Failed to create node 'R10': [corr-53379e9f] Failed to lock the lab (60061).",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2/24"
+        }
+      ],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2/24"
+    },
+    {
+      "job_id": "prov-2eec76a3",
+      "correlation_id": "corr-e178d08f",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "wait_for_boot",
+      "progress_pct": 55,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip",
+        "create_node",
+        "connect_interface",
+        "start_node"
+      ],
+      "steps_remaining": [
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:41:05.376693",
+      "completed_at": "2026-01-05T05:44:18.204403",
+      "error": "[corr-e178d08f] Node 10.255.255.2 not reachable after 180s",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2/24"
+        },
+        {
+          "action": "delete_node",
+          "platform": "eve-ng",
+          "node_id": 13
+        }
+      ],
+      "eve_ng_node_id": 13,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2/24"
+    },
+    {
+      "job_id": "prov-c01cdb29",
+      "correlation_id": "corr-e36cdee7",
+      "device_name": "R10",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "wait_for_boot",
+      "progress_pct": 55,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip",
+        "create_node",
+        "connect_interface",
+        "start_node"
+      ],
+      "steps_remaining": [
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T05:56:57.053143",
+      "completed_at": "2026-01-05T06:00:12.880341",
+      "error": "[corr-e36cdee7] Node 10.255.255.2 not reachable after 180s",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2/24"
+        },
+        {
+          "action": "delete_node",
+          "platform": "eve-ng",
+          "node_id": 13
+        },
+        {
+          "action": "remove_dhcp_reservation",
+          "platform": "eve-ng",
+          "mac_address": "50:00:00:0d:00:00"
+        }
+      ],
+      "eve_ng_node_id": 13,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2/24"
+    },
+    {
+      "job_id": "prov-5cd45e77",
+      "correlation_id": "corr-173736fa",
+      "device_name": "R11",
+      "platform": "eve-ng",
+      "status": "failed",
+      "step": "allocate_ip",
+      "progress_pct": 11,
+      "steps_completed": [
+        "validate_inputs"
+      ],
+      "steps_remaining": [
+        "allocate_ip",
+        "create_node",
+        "connect_interface",
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T06:09:22.713142",
+      "completed_at": "2026-01-05T06:09:24.904694",
+      "error": "Device not found: R11",
+      "rollback_actions": [],
+      "eve_ng_node_id": null,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": null
+    },
+    {
+      "job_id": "prov-87233218",
+      "correlation_id": "corr-d2156ee7",
+      "device_name": "R11",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "wait_for_boot",
+      "progress_pct": 55,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip",
+        "create_node",
+        "connect_interface",
+        "start_node"
+      ],
+      "steps_remaining": [
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T06:12:01.461159",
+      "completed_at": "2026-01-05T06:15:20.238291",
+      "error": "[corr-d2156ee7] Node 10.255.255.2 not reachable after 180s",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2"
+        },
+        {
+          "action": "delete_node",
+          "platform": "eve-ng",
+          "node_id": 13
+        },
+        {
+          "action": "remove_dhcp_reservation",
+          "platform": "eve-ng",
+          "mac_address": "50:00:00:0d:00:00"
+        },
+        {
+          "action": "remove_day0_iso",
+          "platform": "eve-ng",
+          "node_id": 13
+        }
+      ],
+      "eve_ng_node_id": 13,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2"
+    },
+    {
+      "job_id": "prov-e0a8637e",
+      "correlation_id": "corr-08a31472",
+      "device_name": "R11",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "create_day0_iso",
+      "progress_pct": 44,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip",
+        "create_node",
+        "connect_interface"
+      ],
+      "steps_remaining": [
+        "start_node",
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T06:34:11.495087",
+      "completed_at": "2026-01-05T06:34:29.947645",
+      "error": "[corr-08a31472] Failed to stop node 13: [corr-08a31472] Cannot connect to EVE-NG at 203.0.113.201: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2"
+        },
+        {
+          "action": "delete_node",
+          "platform": "eve-ng",
+          "node_id": 13
+        },
+        {
+          "action": "remove_dhcp_reservation",
+          "platform": "eve-ng",
+          "mac_address": "50:00:00:0d:00:00"
+        }
+      ],
+      "eve_ng_node_id": 13,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2"
+    },
+    {
+      "job_id": "prov-a29da358",
+      "correlation_id": "corr-37b87305",
+      "device_name": "R11",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "wait_for_boot",
+      "progress_pct": 55,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip",
+        "create_node",
+        "connect_interface",
+        "start_node"
+      ],
+      "steps_remaining": [
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T06:35:55.254039",
+      "completed_at": "2026-01-05T06:41:10.924641",
+      "error": "[corr-37b87305] Node 10.255.255.2 not reachable after 300s",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2"
+        },
+        {
+          "action": "delete_node",
+          "platform": "eve-ng",
+          "node_id": 13
+        },
+        {
+          "action": "remove_dhcp_reservation",
+          "platform": "eve-ng",
+          "mac_address": "50:00:00:0d:00:00"
+        },
+        {
+          "action": "remove_day0_iso",
+          "platform": "eve-ng",
+          "node_id": 13
+        }
+      ],
+      "eve_ng_node_id": 13,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2"
+    },
+    {
+      "job_id": "prov-ebc2f7d5",
+      "correlation_id": "corr-4c38278d",
+      "device_name": "R11",
+      "platform": "eve-ng",
+      "status": "rolled_back",
+      "step": "wait_for_console",
+      "progress_pct": 55,
+      "steps_completed": [
+        "validate_inputs",
+        "allocate_ip",
+        "create_node",
+        "connect_interface",
+        "start_node"
+      ],
+      "steps_remaining": [
+        "wait_for_boot",
+        "apply_ztp",
+        "add_to_netbox",
+        "finalize"
+      ],
+      "started_at": "2026-01-05T07:11:58.225053",
+      "completed_at": "2026-01-05T07:17:21.578747",
+      "error": "Device did not reach console prompt within 300s",
+      "rollback_actions": [
+        {
+          "action": "release_ip",
+          "platform": "netbox",
+          "ip_address": "10.255.255.2"
+        },
+        {
+          "action": "delete_node",
+          "platform": "eve-ng",
+          "node_id": 13
+        },
+        {
+          "action": "remove_dhcp_reservation",
+          "platform": "eve-ng",
+          "mac_address": "50:00:00:0d:00:00"
+        }
+      ],
+      "eve_ng_node_id": 13,
+      "containerlab_node_name": null,
+      "netbox_device_id": null,
+      "mgmt_ip": "10.255.255.2"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+---
+- name: Interface statistics report
+  hosts: cisco_routers:cisco_switches
+  gather_facts: false
+
+  vars:
+    report_dir: "{{ playbook_dir }}/../../reports"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+
+  tasks:
+    - name: Create report directory
+      delegate_to: localhost
+      run_once: true
+      ansible.builtin.file:
+        path: "{{ report_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Get interface brief
+      cisco.ios.ios_command:
+        commands:
+          - show ip interface brief
+      register: interface_brief
+
+    - name: Get interface counters
+      cisco.ios.ios_command:
+        commands:
+          - show interfaces | include (^[A-Za-z]|packets input|packets output|input errors|output errors|CRC)
+      register: interface_counters
+
+    - name: Get interface description
+      cisco.ios.ios_command:
+        commands:
+          - show interfaces description
+      register: interface_desc
+
+    - name: Display interface status
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} Interface Report ===
+
+          Interface Status:
+          {{ interface_brief.stdout[0] }}
+
+          Interface Descriptions:
+          {{ interface_desc.stdout[0] }}
+
+          Interface Counters (errors highlighted):
+          {{ interface_counters.stdout[0] }}
+
+    - name: Save report to file
+      delegate_to: localhost
+      ansible.builtin.copy:
+        content: |
+          {{ inventory_hostname }} Interface Report
+          Generated: {{ timestamp }}
+          ================================================
+
+          Interface Status:
+          {{ interface_brief.stdout[0] }}
+
+          Interface Descriptions:
+          {{ interface_desc.stdout[0] }}
+
+          Interface Counters:
+          {{ interface_counters.stdout[0] }}
+        dest: "{{ report_dir }}/{{ inventory_hostname }}_interfaces_{{ timestamp }}.txt"
+        mode: '0644'

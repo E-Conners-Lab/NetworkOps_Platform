@@ -1,0 +1,138 @@
+# Feature Flags Configuration for NetworkOps
+#
+# These flags control experimental features and phased rollouts.
+# Can be overridden by environment variables: FF_<FLAG_NAME>=true
+#
+# Priority order:
+#   1. Environment variables (highest)
+#   2. This config file
+#   3. Defaults in core/feature_flags.py (lowest)
+#
+# Example environment override:
+#   FF_USE_AETEST=true python dashboard/api_server.py
+
+feature_flags:
+  # =============================================================================
+  # Phase 1: pyATS Deep Integration
+  # =============================================================================
+
+  # Enable aetest framework for structured testing
+  # When enabled, tests use pyATS aetest lifecycle (setup/test/cleanup)
+  use_aetest: false
+
+  # =============================================================================
+  # Phase 2: Multi-Vendor Parsing
+  # =============================================================================
+
+  # Enable NTC-Templates as fallback parser for non-Cisco devices
+  # When enabled, UnifiedParser tries NTC after Genie fails
+  use_ntc_templates: false
+
+  # Enable schema normalization across parser outputs
+  # Harmonizes field names between Genie and NTC-Templates
+  use_normalizer: true
+
+  # =============================================================================
+  # Phase 3: Advanced Tools (pick one based on pain points)
+  # =============================================================================
+
+  # Enable Nornir for parallel task execution
+  # Only enable if current async code is insufficient
+  use_nornir: false
+
+  # Enable Batfish for pre-change config validation
+  # Requires Batfish server running separately
+  use_batfish: false
+
+  # =============================================================================
+  # Observability & Logging
+  # =============================================================================
+
+  # Use structured JSON logging (for ELK/Splunk ingestion)
+  structured_logging: true
+
+  # Enable metrics collection for automation health
+  # Exposes /metrics endpoint and tracks parser success rates
+  metrics_enabled: true
+
+  # =============================================================================
+  # Existing Features (safe rollout control)
+  # =============================================================================
+
+  # Enable hierarchical site view (Region > Site > Rack > Device)
+  # Also controllable via ENABLE_HIERARCHICAL_VIEW env var
+  enable_hierarchical_view: false
+
+  # Use NetBox as source of truth for device inventory
+  # Also controllable via USE_NETBOX env var
+  use_netbox: false
+
+  # Enable conversation history in chatbot
+  enable_chat_history: true
+
+  # =============================================================================
+  # Automated Device Provisioning
+  # =============================================================================
+
+  # Master switch for automated provisioning feature
+  # When false, all provisioning endpoints return 403
+  automated_provisioning: false
+
+  # Enable EVE-NG provisioning
+  # Requires EVE_NG_HOST, EVE_NG_USERNAME, EVE_NG_PASSWORD env vars
+  eve_ng_enabled: false
+
+  # Enable Containerlab provisioning
+  # Requires containerlab VM running via Multipass
+  containerlab_enabled: false
+
+  # =============================================================================
+  # Pre-Change Impact Analysis
+  # =============================================================================
+
+  # Enable pre-change impact analysis for interface shutdown commands
+  # Analyzes OSPF/BGP adjacencies and route impacts before changes
+  impact_analysis:
+    enabled: true
+    # Supported platforms (Phase 3: Cisco IOS-XE, FRR, Nokia SR Linux)
+    supported_platforms:
+      - cisco_xe
+      - frr
+      - srlinux
+    # Analysis timeout in seconds
+    analysis_timeout_sec: 10
+    # Maximum age of cached data in seconds before refresh required
+    data_max_age_sec: 300
+    # Rate limiting for refresh requests
+    rate_limit_per_user_per_minute: 10
+    rate_limit_per_device_per_minute: 2
+
+  # Intent-based validation
+  intent_validation:
+    enabled: true
+    intents_dir: "data/intents"
+
+  # Dependency graph for impact analysis
+  dependency_graph:
+    enabled: true
+
+  # =============================================================================
+  # Autonomous Network Operations Agent
+  # =============================================================================
+
+  # Master switch for the autonomous agent
+  # When false, agent components don't start
+  autonomous_agent_enabled: false
+
+  # Allow agent to autonomously execute approved actions
+  # When false, agent only proposes actions (requires manual execution)
+  agent_autonomous_execution: false
+
+  # Agent environment (lab, staging, production)
+  # Affects validation thresholds and approval requirements
+  agent_environment: lab
+
+  # Validation mode for agent decisions
+  # synchronous: Block until validated (safer, slower)
+  # asynchronous: Non-blocking validation (faster, less safe)
+  agent_validation_mode: synchronous

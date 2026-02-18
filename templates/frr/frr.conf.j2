@@ -1,0 +1,75 @@
+frr version 8.4.1_git
+frr defaults traditional
+hostname {{ hostname }}
+log syslog informational
+no ipv6 forwarding
+!
+{% for route in static_routes %}
+ip route {{ route.prefix }} {{ route.next_hop }}
+{% endfor %}
+{% if static_routes %}
+!
+{% endif %}
+{% for intf in interfaces %}
+interface {{ intf.name }}
+{% if intf.description %}
+ description {{ intf.description }}
+{% endif %}
+ ip address {{ intf.ip_address }}
+{% if intf.ospf %}
+{% if intf.ospf.area is defined %}
+ ip ospf area {{ intf.ospf.area }}
+{% endif %}
+{% if intf.ospf.mtu_ignore is defined %}
+ ip ospf mtu-ignore
+{% endif %}
+{% if intf.ospf.network_type is defined %}
+ ip ospf network {{ intf.ospf.network_type }}
+{% endif %}
+{% if intf.ospf.priority is defined %}
+ ip ospf priority {{ intf.ospf.priority }}
+{% endif %}
+{% if intf.ospf.passive is defined %}
+ ip ospf passive
+{% endif %}
+{% endif %}
+exit
+!
+{% endfor %}
+{% if bgp_asn %}
+router bgp {{ bgp_asn }}
+ bgp router-id {{ router_id }}
+ no bgp ebgp-requires-policy
+{% for peer in bgp_peers %}
+ neighbor {{ peer.neighbor }} remote-as {{ peer.remote_as }}
+{% if peer.ebgp_multihop is defined and peer.ebgp_multihop %}
+ neighbor {{ peer.neighbor }} ebgp-multihop {{ peer.ebgp_multihop }}
+{% endif %}
+{% if peer.update_source is defined and peer.update_source %}
+ neighbor {{ peer.neighbor }} update-source {{ peer.update_source }}
+{% endif %}
+{% endfor %}
+ !
+ address-family ipv4 unicast
+{% for net in bgp_networks %}
+  network {{ net.prefix }}
+{% endfor %}
+ exit-address-family
+exit
+!
+{% endif %}
+{% if ospf_enabled %}
+router ospf
+ ospf router-id {{ router_id }}
+{% for oi in ospf_networks %}
+ network {{ oi.network }} area {{ oi.area }}
+{% endfor %}
+{% for r in ospf_redistribute %}
+ redistribute {{ r.type }}{{ ' route-map ' ~ r.route_map if r.route_map is defined else '' }}
+{% endfor %}
+exit
+!
+{% endif %}
+{% if frr_extra_config %}
+{{ frr_extra_config }}
+{% endif %}

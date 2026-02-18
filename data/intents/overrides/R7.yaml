@@ -1,0 +1,6 @@
+device: R7
+intent:
+  ospf_neighbors:
+    - neighbor_id: "198.51.100.4"
+      expected_state: "FULL"
+      severity: critical

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "networkops.fullname" . }}-config
+  labels:
+    {{- include "networkops.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.api.env.LOG_LEVEL | quote }}
+  LOG_FORMAT: {{ .Values.api.env.LOG_FORMAT | quote }}
+  APP_VERSION: {{ .Values.api.env.APP_VERSION | quote }}
+  RATE_LIMIT_DEFAULT: {{ .Values.rateLimit.default | quote }}
+  RATE_LIMIT_AUTH: {{ .Values.rateLimit.auth | quote }}
+  RATE_LIMIT_COMMANDS: {{ .Values.rateLimit.commands | quote }}
+  RATE_LIMIT_READONLY: {{ .Values.rateLimit.readonly | quote }}
+  {{- if .Values.netbox.enabled }}
+  USE_NETBOX: "true"
+  NETBOX_URL: {{ .Values.netbox.url | quote }}
+  {{- else }}
+  USE_NETBOX: "false"
+  {{- end }}

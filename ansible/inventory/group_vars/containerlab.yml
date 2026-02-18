@@ -1,0 +1,4 @@
+---
+# Containerlab device variables
+ansible_connection: local
+containerlab_vm: "{{ lookup('env', 'CONTAINERLAB_VM') | default('containerlab', true) }}"

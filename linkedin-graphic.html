@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetworkOps — LinkedIn Graphic</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --border: #1e2a3a;
+    --cyan: #06d6a0;
+    --cyan-dim: #06d6a033;
+    --cyan-glow: #06d6a055;
+    --blue: #3b82f6;
+    --blue-dim: #3b82f620;
+    --slate: #94a3b8;
+    --white: #f1f5f9;
+    --muted: #64748b;
+    --terminal-bg: #0c1220;
+    --green-prompt: #4ade80;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'Instrument Sans', sans-serif;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .card {
+    width: 1200px;
+    height: 627px;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* ── Animated background grid ── */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.25;
+    mask-image: radial-gradient(ellipse 70% 60% at 75% 50%, black 20%, transparent 80%);
+  }
+
+  /* ── Glow orbs ── */
+  .glow-1 {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, var(--cyan-dim) 0%, transparent 70%);
+    top: -100px;
+    right: -50px;
+    animation: drift 8s ease-in-out infinite alternate;
+  }
+  .glow-2 {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, var(--blue-dim) 0%, transparent 70%);
+    bottom: -80px;
+    left: 30%;
+    animation: drift 10s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(20px, -15px); }
+  }
+
+  /* ── Left column ── */
+  .left {
+    padding: 48px 44px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--cyan-dim);
+    border: 1px solid var(--cyan);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    width: fit-content;
+    animation: fadeSlide 0.6s ease-out both;
+  }
+  .badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--cyan);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .title-block {
+    animation: fadeSlide 0.6s ease-out 0.1s both;
+  }
+
+  .project-name {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--white) 60%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .tagline {
+    font-size: 18px;
+    color: var(--slate);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 28px;
+    animation: fadeSlide 0.6s ease-out 0.2s both;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1;
+  }
+  .stat-value .accent { color: var(--cyan); }
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  .vendor-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    animation: fadeSlide 0.6s ease-out 0.3s both;
+  }
+  .vendor-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--slate);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+
+  .github-url {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    animation: fadeSlide 0.6s ease-out 0.4s both;
+  }
+  .github-url span { color: var(--cyan); }
+
+  /* ── Right column ── */
+  .right {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 48px 44px 40px 20px;
+    gap: 24px;
+  }
+
+  /* Terminal block */
+  .terminal {
+    background: var(--terminal-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    animation: fadeSlide 0.6s ease-out 0.15s both;
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 14px;
+    background: #0f1729;
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .terminal-dot.r { background: #ef4444; }
+  .terminal-dot.y { background: #eab308; }
+  .terminal-dot.g { background: #22c55e; }
+  .terminal-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+  .terminal-body {
+    padding: 16px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.8;
+  }
+  .terminal-line {
+    display: flex;
+    gap: 0;
+  }
+  .prompt {
+    color: var(--green-prompt);
+    user-select: none;
+    min-width: fit-content;
+  }
+  .cmd { color: var(--white); }
+  .comment {
+    color: var(--muted);
+    font-style: italic;
+  }
+  .flag { color: var(--cyan); }
+  .url { color: var(--blue); }
+  .step-num {
+    color: var(--muted);
+    margin-right: 4px;
+    user-select: none;
+  }
+
+  /* Feature pills */
+  .features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    animation: fadeSlide 0.6s ease-out 0.25s both;
+  }
+  .feature-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 11.5px;
+    color: var(--slate);
+    font-weight: 500;
+    transition: border-color 0.2s;
+  }
+  .feature-pill .icon {
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  /* Topology mini-visualization */
+  .topo-canvas {
+    position: absolute;
+    right: 30px;
+    top: 30px;
+    width: 160px;
+    height: 100px;
+    z-index: 1;
+    opacity: 0.3;
+  }
+  .topo-canvas svg {
+    width: 100%;
+    height: 100%;
+  }
+  .topo-line {
+    stroke: var(--cyan);
+    stroke-width: 1;
+    opacity: 0.5;
+  }
+  .topo-node {
+    fill: var(--cyan);
+    opacity: 0.7;
+  }
+  .topo-node-ring {
+    fill: none;
+    stroke: var(--cyan);
+    stroke-width: 0.5;
+    opacity: 0.3;
+    animation: ring-pulse 3s ease-in-out infinite;
+  }
+  @keyframes ring-pulse {
+    0%, 100% { r: 8; opacity: 0.3; }
+    50% { r: 12; opacity: 0; }
+  }
+
+  /* MCP badge */
+  .mcp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--blue-dim);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 100px;
+    padding: 5px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--blue);
+    letter-spacing: 0.04em;
+    animation: fadeSlide 0.6s ease-out 0.35s both;
+    width: fit-content;
+  }
+
+  @keyframes fadeSlide {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ── Divider ── */
+  .divider {
+    position: absolute;
+    left: 50%;
+    top: 60px;
+    bottom: 60px;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--border) 20%, var(--border) 80%, transparent);
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="grid-bg"></div>
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+  <div class="divider"></div>
+
+  <!-- Left Column -->
+  <div class="left">
+    <div>
+      <div class="badge">Now Open Source</div>
+    </div>
+
+    <div class="title-block">
+      <div class="project-name">NetworkOps</div>
+      <div class="tagline">AI-Powered Network Automation</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-value">178</div>
+        <div class="stat-label">MCP Tools</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">24</div>
+        <div class="stat-label">Categories</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value"><span class="accent">5</span>+</div>
+        <div class="stat-label">Platforms</div>
+      </div>
+    </div>
+
+    <div class="vendor-strip">
+      <span class="vendor-tag">Cisco IOS-XE</span>
+      <span class="vendor-tag">Juniper</span>
+      <span class="vendor-tag">Nokia SR Linux</span>
+      <span class="vendor-tag">Arista</span>
+      <span class="vendor-tag">FRRouting</span>
+      <span class="vendor-tag">Linux</span>
+    </div>
+
+    <div class="github-url"><span>github.com/</span>E-Conners-Lab/networkops</div>
+  </div>
+
+  <!-- Right Column -->
+  <div class="right">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot r"></div>
+        <div class="terminal-dot y"></div>
+        <div class="terminal-dot g"></div>
+        <span class="terminal-title">quickstart</span>
+      </div>
+      <div class="terminal-body">
+        <div class="terminal-line"><span class="step-num">#</span><span class="comment"> Try it in 3 commands &mdash; no devices needed</span></div>
+        <div class="terminal-line"><span class="prompt">$ </span><span class="cmd">git clone </span><span class="url">github.com/E-Conners-Lab/networkops</span></div>
+        <div class="terminal-line"><span class="prompt">$ </span><span class="cmd">./scripts/quickstart.sh </span><span class="flag">--demo</span></div>
+        <div class="terminal-line"><span class="prompt">$ </span><span class="cmd">open </span><span class="url">http://localhost:5001</span></div>
+      </div>
+    </div>
+
+    <div class="features">
+      <div class="feature-pill"><span class="icon">&#9672;</span> Interactive Topology</div>
+      <div class="feature-pill"><span class="icon">&#9656;</span> BGP / OSPF / DMVPN Overlays</div>
+      <div class="feature-pill"><span class="icon">&#8633;</span> Ping Sweep</div>
+      <div class="feature-pill"><span class="icon">&#9881;</span> NETCONF / YANG</div>
+      <div class="feature-pill"><span class="icon">&#9745;</span> pyATS Compliance</div>
+      <div class="feature-pill"><span class="icon">&#9889;</span> Streaming Telemetry</div>
+      <div class="feature-pill"><span class="icon">&#128274;</span> RBAC &amp; MFA</div>
+      <div class="feature-pill"><span class="icon">&#9096;</span> Kubernetes Ready</div>
+    </div>
+
+    <div class="mcp-badge">&#11044; Built on Model Context Protocol</div>
+  </div>
+</div>
+
+</body>
+</html>

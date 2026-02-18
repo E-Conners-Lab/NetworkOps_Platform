@@ -1,0 +1,42 @@
+{
+  "name": "srlinux-security",
+  "description": "Security compliance template for Nokia SR Linux devices",
+  "device_roles": ["spine", "leaf"],
+  "platform": "srlinux",
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "SRL-SEC-001",
+      "name": "NTP Configured",
+      "description": "NTP server should be configured",
+      "section": "system",
+      "severity": "medium",
+      "match_type": "regex",
+      "pattern": "/system ntp",
+      "remediation_template": "/system ntp server <NTP_SERVER>",
+      "weight": 6
+    },
+    {
+      "id": "SRL-SEC-002",
+      "name": "ACL Configured",
+      "description": "Access control lists should be configured",
+      "section": "global",
+      "severity": "high",
+      "match_type": "regex",
+      "pattern": "acl",
+      "remediation_template": "/acl cpm-filter ipv4-filter entry <ID> action accept",
+      "weight": 8
+    },
+    {
+      "id": "SRL-SEC-003",
+      "name": "Admin State Check",
+      "description": "Critical interfaces should have admin-state enable",
+      "section": "interface",
+      "severity": "high",
+      "match_type": "present",
+      "pattern": "admin-state enable",
+      "remediation_template": "/interface <INTF> admin-state enable",
+      "weight": 8
+    }
+  ]
+}

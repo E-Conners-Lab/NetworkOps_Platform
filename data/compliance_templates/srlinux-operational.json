@@ -1,0 +1,31 @@
+{
+  "name": "srlinux-operational",
+  "description": "Operational compliance template for Nokia SR Linux devices",
+  "device_roles": ["spine", "leaf"],
+  "platform": "srlinux",
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "SRL-OPS-001",
+      "name": "Logging Configured",
+      "description": "System logging should be configured",
+      "section": "system",
+      "severity": "medium",
+      "match_type": "regex",
+      "pattern": "/system logging",
+      "remediation_template": "/system logging network-instance mgmt",
+      "weight": 6
+    },
+    {
+      "id": "SRL-OPS-002",
+      "name": "Hostname Set",
+      "description": "System hostname should be configured",
+      "section": "system",
+      "severity": "low",
+      "match_type": "regex",
+      "pattern": "/system name",
+      "remediation_template": "/system name host-name <HOSTNAME>",
+      "weight": 3
+    }
+  ]
+}

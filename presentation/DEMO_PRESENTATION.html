@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetworkOps - Network Automation Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .slide {
+            display: none;
+            min-height: 100vh;
+            padding: 60px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            color: #00d4ff;
+        }
+
+        p, li {
+            font-size: 1.8rem;
+            line-height: 1.8;
+            color: #e0e0e0;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            padding: 15px 0;
+            padding-left: 50px;
+            position: relative;
+        }
+
+        li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            color: #00ff88;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .highlight {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-size: 2rem;
+            color: #888;
+            margin-top: 20px;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .diagram {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px 0;
+            font-family: monospace;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            border: 2px solid #00d4ff;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .comparison-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .comparison-box.old {
+            border: 2px solid #ff6b6b;
+        }
+
+        .comparison-box.new {
+            border: 2px solid #00ff88;
+        }
+
+        .comparison-box h3 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .comparison-box.old h3 {
+            color: #ff6b6b;
+        }
+
+        .comparison-box.new h3 {
+            color: #00ff88;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .stat-box .number {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .stat-box .label {
+            font-size: 1.3rem;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .feature-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            border-left: 4px solid #00d4ff;
+        }
+
+        .feature-box h3 {
+            font-size: 1.6rem;
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .feature-box p {
+            font-size: 1.3rem;
+        }
+
+        .nav {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav button {
+            background: rgba(0, 212, 255, 0.2);
+            border: 2px solid #00d4ff;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav button:hover {
+            background: #00d4ff;
+            color: #1a1a2e;
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .emoji {
+            font-size: 3rem;
+            margin-right: 20px;
+        }
+
+        .demo-note {
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.1), rgba(0, 212, 255, 0.1));
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+            border: 2px dashed #00ff88;
+        }
+
+        .demo-note h3 {
+            color: #00ff88;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .tech-analogy {
+            font-style: italic;
+            color: #00d4ff;
+            font-size: 1.5rem;
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Slide 1: Title -->
+    <div class="slide active" id="slide1">
+        <div class="center">
+            <h1>NetworkOps</h1>
+            <p class="subtitle">AI-Powered Network Automation</p>
+            <p style="margin-top: 60px; font-size: 1.5rem; color: #666;">
+                A control center for computer networks
+            </p>
+            <p style="margin-top: 100px; font-size: 1.2rem; color: #444;">
+                Press <span class="highlight">Right Arrow</span> or click <span class="highlight">Next</span> to continue
+            </p>
+        </div>
+    </div>
+
+    <!-- Slide 2: What is a Network? -->
+    <div class="slide" id="slide2">
+        <h2>First, what's a "network"?</h2>
+        <p class="tech-analogy">
+            Think of it like the highway system for your company's data.
+        </p>
+        <ul>
+            <li>Computers need to talk to each other - email, files, internet</li>
+            <li><span class="highlight">Routers</span> = traffic intersections that direct data</li>
+            <li><span class="highlight">Switches</span> = local neighborhood roads connecting devices</li>
+            <li>A typical company has <span class="highlight">dozens to thousands</span> of these devices</li>
+        </ul>
+        <div class="diagram">
+            <pre style="color: #00ff88;">
+    Your Laptop                              A Server
+        |                                        |
+        v                                        v
+    [Switch] -----> [Router] -----> [Router] -----> [Switch]
+                         |
+                    (internet)
+            </pre>
+        </div>
+    </div>
+
+    <!-- Slide 3: The Problem -->
+    <div class="slide" id="slide3">
+        <h2>The Problem</h2>
+        <p style="font-size: 1.5rem; margin-bottom: 30px;">
+            Managing these devices is <span class="highlight">complicated and time-consuming</span>
+        </p>
+        <div class="comparison">
+            <div class="comparison-box old">
+                <h3>How it's done today</h3>
+                <ul style="font-size: 1.3rem;">
+                    <li>Log into each device one by one</li>
+                    <li>Type cryptic commands manually</li>
+                    <li>Different brands = different languages</li>
+                    <li>No "big picture" view</li>
+                    <li>Takes <span class="highlight">hours</span> to find problems</li>
+                </ul>
+            </div>
+            <div class="comparison-box new">
+                <h3>What we want</h3>
+                <ul style="font-size: 1.3rem;">
+                    <li>See everything in one place</li>
+                    <li>Ask questions in plain English</li>
+                    <li>Get alerts before things break</li>
+                    <li>Check 1,000 devices in seconds</li>
+                    <li>Less expertise required</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: The Solution -->
+    <div class="slide" id="slide4">
+        <h2>What I Built: NetworkOps</h2>
+        <p style="font-size: 1.5rem; margin-bottom: 20px;">
+            A <span class="highlight">"mission control"</span> for computer networks
+        </p>
+        <div class="feature-grid">
+            <div class="feature-box">
+                <h3>Visual Map</h3>
+                <p>See your entire network on one screen - who's connected to who, what's healthy, what's not</p>
+            </div>
+            <div class="feature-box">
+                <h3>AI Assistant</h3>
+                <p>Ask "Why is the network slow?" and get an answer - like ChatGPT for your network</p>
+            </div>
+            <div class="feature-box">
+                <h3>Remote Control</h3>
+                <p>Run commands on any device from your web browser - no special software needed</p>
+            </div>
+            <div class="feature-box">
+                <h3>Health Monitoring</h3>
+                <p>Automatically checks all devices every few seconds and alerts you to problems</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Real Numbers -->
+    <div class="slide" id="slide5">
+        <h2>Why It Matters (Real Numbers)</h2>
+        <p style="font-size: 1.4rem; margin-bottom: 20px;">
+            Network downtime costs companies <span class="highlight">$5,600 per minute</span> (source: Gartner)
+        </p>
+        <div class="stat-grid">
+            <div class="stat-box">
+                <div class="number">70%</div>
+                <div class="label">Faster Problem Resolution</div>
+            </div>
+            <div class="stat-box">
+                <div class="number">8 sec</div>
+                <div class="label">To check 13 devices<br>(vs 60+ seconds manually)</div>
+            </div>
+            <div class="stat-box">
+                <div class="number">4,070</div>
+                <div class="label">Requests per second<br>(can handle huge networks)</div>
+            </div>
+        </div>
+        <p style="margin-top: 40px; font-size: 1.3rem; color: #888;">
+            Translation: A network engineer can manage <span class="highlight">4x more devices</span> with this tool
+        </p>
+    </div>
+
+    <!-- Slide 6: The Lab -->
+    <div class="slide" id="slide6">
+        <h2>My Test Network</h2>
+        <p style="font-size: 1.4rem; margin-bottom: 30px;">
+            I built a miniature version of a real company network to test everything
+        </p>
+        <div class="diagram">
+            <pre style="color: #00ff88; font-size: 1.1rem;">
+                        [Switch-R1]
+                            |
+                   R1 (Hub Router)
+                   /            \
+                R2              R3 -----> [Alpine Linux Host]
+                  \            /     \
+                   \          /       [edge1] (External Partner)
+                    R4 (Core)
+                    |
+                [Switch-R4]
+
+    13 Devices Total:
+    - 4 Cisco Routers (R1-R4)
+    - 3 Cisco Switches
+    - 4 Linux Servers
+    - 2 Other Vendors (Nokia, FRRouting)
+            </pre>
+        </div>
+    </div>
+
+    <!-- Slide 7: Key Features Deep Dive -->
+    <div class="slide" id="slide7">
+        <h2>What Can You Do With It?</h2>
+        <ul>
+            <li><span class="highlight">Live Topology Map</span> - Drag devices around, see connections, color-coded health</li>
+            <li><span class="highlight">Talk to AI</span> - "Is R3 having problems?" and get a real answer</li>
+            <li><span class="highlight">Run Commands</span> - Type commands for any device right from the browser</li>
+            <li><span class="highlight">Check Health</span> - One click to scan all 13 devices in 8 seconds</li>
+            <li><span class="highlight">View Logs</span> - See who did what and when (for auditing)</li>
+            <li><span class="highlight">User Permissions</span> - Admins can configure, operators can only view</li>
+        </ul>
+        <div class="demo-note">
+            <h3>Let me show you...</h3>
+            <p>Time for a live demo of the dashboard!</p>
+        </div>
+    </div>
+
+    <!-- Slide 8: Technology -->
+    <div class="slide" id="slide8">
+        <h2>What's Under the Hood?</h2>
+        <p style="font-size: 1.3rem; margin-bottom: 30px; color: #888;">
+            (The nerdy stuff - feel free to zone out)
+        </p>
+        <div class="feature-grid">
+            <div class="feature-box">
+                <h3>Backend (Server)</h3>
+                <p>Python - the programming language used by data scientists and AI engineers</p>
+            </div>
+            <div class="feature-box">
+                <h3>Frontend (Screen)</h3>
+                <p>React - the same technology Facebook and Instagram use</p>
+            </div>
+            <div class="feature-box">
+                <h3>AI Brain</h3>
+                <p>Claude API - the AI that powers this (same company that made ChatGPT competitor)</p>
+            </div>
+            <div class="feature-box">
+                <h3>Network Tools</h3>
+                <p>44 specialized automation tools for talking to network devices</p>
+            </div>
+        </div>
+        <p style="margin-top: 40px; font-size: 1.4rem;">
+            Total: <span class="highlight">~15,000 lines of code</span> across Python, React, and configuration files
+        </p>
+    </div>
+
+    <!-- Slide 9: Business Value -->
+    <div class="slide" id="slide9">
+        <h2>Who Would Use This?</h2>
+        <div class="feature-grid">
+            <div class="feature-box">
+                <h3>Enterprise IT Teams</h3>
+                <p>Companies with 100-5,000 network devices who need visibility and control</p>
+            </div>
+            <div class="feature-box">
+                <h3>Managed Service Providers</h3>
+                <p>Companies that manage networks for other businesses</p>
+            </div>
+            <div class="feature-box">
+                <h3>Data Centers</h3>
+                <p>Facilities with thousands of servers that need reliable connectivity</p>
+            </div>
+            <div class="feature-box">
+                <h3>Network Engineers</h3>
+                <p>Professionals who want to work smarter, not harder</p>
+            </div>
+        </div>
+        <p style="margin-top: 40px; font-size: 1.3rem; color: #888;">
+            Similar tools in the market cost <span class="highlight">$200,000 - $500,000+ per year</span>
+        </p>
+    </div>
+
+    <!-- Slide 10: Demo Recap -->
+    <div class="slide" id="slide10">
+        <h2>What You'll See in the Demo</h2>
+        <ul>
+            <li><span class="highlight">1. Dashboard</span> - The visual network map with all devices</li>
+            <li><span class="highlight">2. Health Check</span> - Scanning all devices in seconds</li>
+            <li><span class="highlight">3. AI Chat</span> - Asking questions about the network</li>
+            <li><span class="highlight">4. Terminal</span> - Running live commands on devices</li>
+            <li><span class="highlight">5. Event Log</span> - Seeing the audit trail</li>
+        </ul>
+        <div class="demo-note">
+            <h3>Ready for the live demo!</h3>
+            <p>Open the dashboard at <code>http://localhost:3000</code></p>
+        </div>
+    </div>
+
+    <!-- Slide 11: Summary -->
+    <div class="slide" id="slide11">
+        <div class="center">
+            <h2>In Summary</h2>
+            <p style="font-size: 1.8rem; max-width: 800px; margin: 0 auto; line-height: 2;">
+                I built a <span class="highlight">professional-grade</span> network automation platform
+                that combines <span class="highlight">visual monitoring</span>, <span class="highlight">AI assistance</span>,
+                and <span class="highlight">multi-vendor support</span> - the kind of tool that large companies
+                pay hundreds of thousands of dollars for.
+            </p>
+            <p style="margin-top: 60px; font-size: 1.5rem; color: #888;">
+                Questions?
+            </p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav">
+        <button onclick="prevSlide()">Previous</button>
+        <button onclick="nextSlide()">Next</button>
+    </div>
+
+    <div class="slide-counter">
+        <span id="current">1</span> / <span id="total">11</span>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 11;
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+
+            if (n > totalSlides) currentSlide = 1;
+            if (n < 1) currentSlide = totalSlides;
+
+            document.getElementById('slide' + currentSlide).classList.add('active');
+            document.getElementById('current').textContent = currentSlide;
+        }
+
+        function nextSlide() {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+
+        function prevSlide() {
+            currentSlide--;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+    </script>
+</body>
+</html>

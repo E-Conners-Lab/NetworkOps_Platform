@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Build outputs
+build/
+dist/
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Test coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore

@@ -1,0 +1,46 @@
+# Backend API Dockerfile
+# Builds a production-ready Flask API with Gunicorn and gevent for WebSocket support
+
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libffi-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for layer caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create data directory for event logs, baselines, etc.
+RUN mkdir -p /app/data
+
+# Run as non-root user
+RUN useradd --create-home appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV SOCKETIO_ASYNC_MODE=gevent
+ENV FLASK_ENV=production
+
+# Expose API port
+EXPOSE 5001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5001/health/live || exit 1
+
+# Run with Gunicorn
+WORKDIR /app/dashboard
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "api_server:app"]

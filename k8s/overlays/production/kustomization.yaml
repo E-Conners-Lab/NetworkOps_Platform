@@ -1,0 +1,49 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: networkops-production
+
+# Reference base configuration
+resources:
+  - ../../base
+
+# Production-specific patches
+patches:
+  # Increase API replicas for production
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: api
+  # Increase Celery workers for production
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 4
+    target:
+      kind: Deployment
+      name: celery-worker
+  # Increase HPA limits for production
+  - patch: |-
+      - op: replace
+        path: /spec/maxReplicas
+        value: 20
+    target:
+      kind: HorizontalPodAutoscaler
+      name: api-hpa
+
+# Production image tags
+images:
+  - name: networkops-api
+    newName: ghcr.io/yourorg/networkops-api
+    newTag: v2.0.0
+  - name: networkops-worker
+    newName: ghcr.io/yourorg/networkops-worker
+    newTag: v2.0.0
+
+# Production labels
+commonLabels:
+  environment: production

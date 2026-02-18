@@ -1,0 +1,260 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Sundays at midnight
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  # ==========================================================================
+  # Python Static Analysis (Bandit)
+  # ==========================================================================
+  bandit:
+    name: Bandit SAST
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit (medium+ severity)
+        run: |
+          bandit -r dashboard/ core/ security/ mcp_tools/ config/ \
+            --exclude .venv,node_modules \
+            -f json -o bandit-report.json \
+            --severity-level medium
+
+      - name: Check results
+        if: always()
+        run: |
+          TOTAL=$(python3 -c "
+          import json
+          data = json.load(open('bandit-report.json'))
+          results = data.get('results', [])
+          skipped = data.get('metrics', {}).get('_totals', {})
+          print(len(results))
+          ")
+          echo "Unresolved findings: $TOTAL"
+          if [ "$TOTAL" -gt 0 ]; then
+            python3 -c "
+          import json
+          data = json.load(open('bandit-report.json'))
+          for r in data.get('results', []):
+            print(f\"::error file={r['filename']},line={r['line_number']}::[{r['test_id']}] {r['issue_severity']}: {r['issue_text']}\")
+          "
+            echo "::error::$TOTAL bandit finding(s) need # nosec suppression or code fix"
+            exit 1
+          fi
+          echo "All findings suppressed with # nosec or resolved"
+
+      - name: Upload Bandit Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          echo "## Bandit Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          python3 -c "
+          import json
+          data = json.load(open('bandit-report.json'))
+          results = data.get('results', [])
+          totals = data.get('metrics', {}).get('_totals', {})
+          nosec = totals.get('nosec', 0)
+          print(f'Findings: **{len(results)}** (suppressed: {nosec})')
+          if not results:
+            print('')
+            print('All findings resolved or suppressed with \`# nosec\`.')
+          else:
+            print('')
+            print('| Severity | File | Line | Issue |')
+            print('|----------|------|------|-------|')
+            for r in results:
+              print(f\"| {r['issue_severity']} | \`{r['filename']}\` | {r['line_number']} | {r['issue_text'][:80]} |\")
+          " >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # Dependency Vulnerability Scan (pip-audit)
+  # ==========================================================================
+  pip-audit:
+    name: Dependency Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Install dependencies
+        run: |
+          # Install in stages to avoid resolution-too-deep from pyATS/genie
+          # pyATS has an extremely complex dependency tree that exceeds pip's default resolver depth
+          pip install pyats genie || true
+          pip install -r requirements.txt || pip install --no-deps -r requirements.txt
+
+      - name: Run pip-audit
+        run: |
+          pip-audit --format json --output pip-audit-report.json --strict \
+            --ignore-vuln CVE-2026-1703 \
+            --ignore-vuln CVE-2026-24049 \
+            --ignore-vuln CVE-2025-61765
+
+      - name: Upload pip-audit Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          echo "## Dependency Vulnerability Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f pip-audit-report.json ]; then
+            python3 -c "
+          import json
+          data = json.load(open('pip-audit-report.json'))
+          deps = data.get('dependencies', [])
+          vulns = [d for d in deps if d.get('vulns')]
+          if not vulns:
+            print('No known vulnerabilities found.')
+          else:
+            print(f'**{len(vulns)}** package(s) with known vulnerabilities:')
+            print('')
+            print('| Package | Version | CVE | Fix |')
+            print('|---------|---------|-----|-----|')
+            for d in vulns:
+              for v in d['vulns']:
+                fix = ', '.join(v.get('fix_versions', ['n/a']))
+                print(f\"| {d['name']} | {d['version']} | {v['id']} | {fix} |\")
+          " >> $GITHUB_STEP_SUMMARY
+          else
+            echo "pip-audit report not generated." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==========================================================================
+  # Container Security Scan (Trivy)
+  # Only runs on: weekly schedule, manual dispatch, or release tags
+  # Skipped on regular pushes/PRs due to long build time (~10-15 min)
+  # ==========================================================================
+  trivy:
+    name: Container Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/share/swift
+          docker system prune -af --volumes || true
+          df -h
+
+      - name: Build API image
+        run: |
+          docker build -f docker/Dockerfile.api -t networkops-api:scan .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'networkops-api:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          timeout: '15m'
+
+      - name: Upload Trivy SARIF report
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Run Trivy for summary
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'networkops-api:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          timeout: '10m'
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          echo "## Container Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Scanned: \`networkops-api:scan\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See Security tab for detailed findings." >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # Secret Scanning (Gitleaks)
+  # ==========================================================================
+  gitleaks:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ==========================================================================
+  # Security Summary
+  # ==========================================================================
+  summary:
+    name: Security Summary
+    needs: [bandit, pip-audit, gitleaks]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check job results
+        run: |
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Bandit SAST | ${{ needs.bandit.result == 'success' && 'Pass' || 'FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Scan | ${{ needs.pip-audit.result == 'success' && 'Pass' || 'FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Detection | ${{ needs.gitleaks.result == 'success' && 'Pass' || 'FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if critical issues
+        if: needs.bandit.result == 'failure' || needs.pip-audit.result == 'failure' || needs.gitleaks.result == 'failure'
+        run: |
+          echo "::error::Security checks failed — see individual job logs"
+          exit 1

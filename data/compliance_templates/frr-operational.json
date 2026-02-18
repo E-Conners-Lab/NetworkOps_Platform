@@ -1,0 +1,42 @@
+{
+  "name": "frr-operational",
+  "description": "Operational compliance template for FRRouting devices",
+  "device_roles": ["router"],
+  "platform": "frr",
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "FRR-OPS-001",
+      "name": "Logging Configured",
+      "description": "Logging should be configured",
+      "section": "global",
+      "severity": "medium",
+      "match_type": "regex",
+      "pattern": "log (syslog|file|stdout)",
+      "remediation_template": "log syslog informational",
+      "weight": 6
+    },
+    {
+      "id": "FRR-OPS-002",
+      "name": "Hostname Set",
+      "description": "Hostname should be configured",
+      "section": "global",
+      "severity": "low",
+      "match_type": "present",
+      "pattern": "hostname",
+      "remediation_template": "hostname <HOSTNAME>",
+      "weight": 3
+    },
+    {
+      "id": "FRR-OPS-003",
+      "name": "Log Timestamps",
+      "description": "Log timestamps should be enabled",
+      "section": "global",
+      "severity": "low",
+      "match_type": "present",
+      "pattern": "log timestamp precision",
+      "remediation_template": "log timestamp precision 3",
+      "weight": 3
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+# Pre-commit hooks for Network Operations Agent
+#
+# Install: pip install pre-commit && pre-commit install
+# Run: pre-commit run --all-files
+#
+# These hooks run before each commit to ensure code quality.
+
+repos:
+  # ==========================================================================
+  # General Checks
+  # ==========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom YAML tags
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, master]
+
+  # ==========================================================================
+  # Python Linting - Ruff (fast, replaces flake8/isort/pyupgrade)
+  # ==========================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      # Linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      # Formatter (replaces black)
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # ==========================================================================
+  # Type Checking - MyPy
+  # ==========================================================================
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-PyYAML
+          - types-requests
+        args:
+          - --ignore-missing-imports
+          - --no-strict-optional
+        # Only check agent code for now
+        files: ^agents/
+
+  # ==========================================================================
+  # Security Linting - Bandit
+  # ==========================================================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: [-c, pyproject.toml]
+        additional_dependencies: ["bandit[toml]"]
+        # Exclude tests
+        exclude: ^tests/
+
+  # ==========================================================================
+  # YAML Validation for Decision Trees
+  # ==========================================================================
+  - repo: local
+    hooks:
+      - id: validate-decision-trees
+        name: Validate Decision Trees
+        entry: python -c "
+import sys
+import yaml
+from pathlib import Path
+
+trees_dir = Path('agents/knowledge/decision_trees')
+if not trees_dir.exists():
+    sys.exit(0)
+
+errors = []
+for f in trees_dir.glob('*.yaml'):
+    try:
+        with open(f) as file:
+            data = yaml.safe_load(file)
+        # Validate structure
+        if 'nodes' not in data:
+            errors.append(f'{f}: missing nodes')
+        if 'metadata' not in data:
+            errors.append(f'{f}: missing metadata')
+        for node in data.get('nodes', []):
+            if 'id' not in node:
+                errors.append(f'{f}: node missing id')
+    except Exception as e:
+        errors.append(f'{f}: {e}')
+
+if errors:
+    print('Decision tree validation errors:')
+    for e in errors:
+        print(f'  - {e}')
+    sys.exit(1)
+"
+        language: python
+        additional_dependencies: [pyyaml]
+        files: ^agents/knowledge/decision_trees/.*\.yaml$
+        pass_filenames: false
+
+# ==========================================================================
+# CI Configuration
+# ==========================================================================
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from hooks
+
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: [mypy]  # Skip mypy in CI (handled by separate workflow)
+  submodules: false

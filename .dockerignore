@@ -1,0 +1,58 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node (dashboard has its own)
+dashboard/node_modules/
+dashboard/build/
+
+# Logs
+*.log
+logs/
+
+# Environment files (secrets)
+.env
+.env.local
+.env.development
+
+# Test data
+tests/
+htmlcov/
+.coverage
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Large data files
+data/chromadb/
+*.sqlite
+*.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp

@@ -1,0 +1,17 @@
+role: core-router
+description: "OSPF Area 0 backbone router"
+applies_to: [R1, R2, R4]
+
+intent:
+  # Per-device OSPF neighbors are defined in overrides.
+  # The role only defines shared expectations.
+  ospf_neighbors: []
+
+  bgp_peers: []
+
+  interfaces:
+    - name: "Loopback0"
+      expected_status: "up"
+      severity: critical
+
+  routes: []

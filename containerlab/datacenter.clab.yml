@@ -1,0 +1,78 @@
+# Containerlab Datacenter Topology
+# Connects to EVE-NG lab via routing through Alpine-1
+name: datacenter
+
+topology:
+  nodes:
+    # Nokia SR Linux - Datacenter spine switch
+    spine1:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:24.10.1
+      startup-config: configs/spine1.cfg
+      mgmt-ipv4: 172.20.20.10
+
+    # FRRouting router - Edge/border router
+    edge1:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+      mgmt-ipv4: 172.20.20.5
+      binds:
+        - configs/edge1-frr.conf:/etc/frr/frr.conf
+        - configs/edge1-daemons:/etc/frr/daemons
+      exec:
+        - ip link set eth1 mtu 1500
+        - iptables -t nat -A POSTROUTING -o eth0 -s 10.200.0.0/16 -j MASQUERADE
+
+    # FRRouting router - Containerlab internal router
+    R9:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+      mgmt-ipv4: 172.20.20.3
+      binds:
+        - configs/R9-frr.conf:/etc/frr/frr.conf
+        - configs/R9-daemons:/etc/frr/daemons
+      exec:
+        - ip link set eth1 mtu 1500
+
+    # FRRouting router - eBGP peer to R9
+    R10:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+      mgmt-ipv4: 172.20.20.4
+      binds:
+        - configs/R10-frr.conf:/etc/frr/frr.conf
+        - configs/R10-daemons:/etc/frr/daemons
+      exec:
+        - ip link set eth1 mtu 1500
+
+    # Linux hosts for traffic generation
+    server1:
+      kind: linux
+      image: alpine:3.19
+      mgmt-ipv4: 172.20.20.20
+      exec:
+        - ip addr add 10.100.1.10/24 dev eth1
+        - ip route add default via 10.100.1.1
+
+    server2:
+      kind: linux
+      image: alpine:3.19
+      mgmt-ipv4: 172.20.20.21
+      exec:
+        - ip addr add 10.100.2.10/24 dev eth1
+        - ip route add default via 10.100.2.1
+
+  links:
+    # Spine to Edge
+    - endpoints: ["spine1:e1-1", "edge1:eth1"]
+    # Spine to Servers
+    - endpoints: ["spine1:e1-2", "server1:eth1"]
+    - endpoints: ["spine1:e1-3", "server2:eth1"]
+    # Spine to R9
+    - endpoints: ["spine1:e1-4", "R9:eth1"]
+    # R9 to R10
+    - endpoints: ["R9:eth2", "R10:eth1"]
+
+mgmt:
+  network: clab-mgmt
+  ipv4-subnet: 172.20.20.0/24

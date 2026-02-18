@@ -1,0 +1,132 @@
+# =============================================================================
+# NetworkOps - AI-Powered Network Automation
+# =============================================================================
+# Full stack deployment with Dashboard, API, and MCP Server
+#
+# Quick Start:
+#   1. cp .env.example .env
+#   2. Edit .env with your credentials
+#   3. docker-compose up -d
+#   4. Open http://localhost:3000
+#
+# NOTE: On macOS, Docker containers cannot reach EVE-NG/Multipass VMs directly.
+# For full lab connectivity, run the API natively instead:
+#   cd dashboard && python api_server.py
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Dashboard API Server
+  # Flask + Gunicorn + WebSocket support
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: networkops-api
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    environment:
+      - SOCKETIO_ASYNC_MODE=gevent
+      - FLASK_ENV=production
+      - DASHBOARD_ORIGIN=http://localhost:3000
+      - DEMO_MODE=${DEMO_MODE:-false}
+    volumes:
+      - ./data:/app/data
+      - ./baselines:/app/baselines
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - networkops
+
+  # ---------------------------------------------------------------------------
+  # Dashboard Frontend
+  # React + Nginx reverse proxy
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile.frontend
+      args:
+        REACT_APP_API_URL: ""
+        REACT_APP_WS_URL: ""
+    container_name: networkops-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - networkops
+
+  # ---------------------------------------------------------------------------
+  # MDT Collector (optional - set MDT_EXTERNAL=true on api to use)
+  # Standalone gRPC telemetry collector, publishes via Redis pub/sub
+  # ---------------------------------------------------------------------------
+  mdt-collector:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile.api
+    container_name: networkops-mdt-collector
+    command: python dashboard/run_mdt_collector.py
+    ports:
+      - "57000:57000"
+    env_file:
+      - .env
+    profiles:
+      - mdt-external
+    restart: unless-stopped
+    networks:
+      - networkops
+
+  # ---------------------------------------------------------------------------
+  # MCP Server
+  # AI-powered network automation tools for Claude Code
+  # ---------------------------------------------------------------------------
+  mcp-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mcp
+    container_name: networkops-mcp
+    env_file:
+      - .env
+    environment:
+      - MEMORY_ENABLE_SEMANTIC=true
+      - MEMORY_AUTO_PRUNE=true
+    volumes:
+      - ./data:/app/data
+      - ./baselines:/app/baselines
+    # MCP uses stdio, not HTTP - no ports exposed
+    # This container is for building/testing the MCP server
+    # In production, Claude Code invokes the MCP server directly
+    restart: "no"
+    networks:
+      - networkops
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  networkops:
+    name: networkops-network
+    driver: bridge
+
+# =============================================================================
+# Named Volumes (optional - use bind mounts above for easier access)
+# =============================================================================
+# volumes:
+#   networkops-data:
+#   networkops-baselines:

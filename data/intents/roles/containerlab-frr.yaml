@@ -1,0 +1,15 @@
+role: containerlab-frr
+description: "FRRouting devices in Containerlab"
+applies_to: [edge1, R9, R10]
+
+intent:
+  ospf_neighbors: []
+
+  bgp_peers: []
+
+  interfaces:
+    - name: "lo"
+      expected_status: "up"
+      severity: critical
+
+  routes: []

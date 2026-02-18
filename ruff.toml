@@ -1,0 +1,16 @@
+[lint]
+# Ignore rules that are too strict for this project
+ignore = [
+    "F401",  # Unused imports (some are for side effects)
+    "F841",  # Unused variables (often for clarity)
+    "F541",  # f-string without placeholders
+    "E402",  # Module import not at top (needed for path manipulation)
+    "E741",  # Ambiguous variable name
+]
+
+# Exclude test files and generated code
+exclude = [
+    "test_*.py",
+    ".venv",
+    "node_modules",
+]

@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: networkops-config
+  namespace: networkops
+  labels:
+    app.kubernetes.io/name: networkops
+    app.kubernetes.io/component: config
+data:
+  # Flask settings
+  FLASK_ENV: "production"
+  APP_VERSION: "2.0.0"
+
+  # Logging
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+
+  # Redis (internal service)
+  REDIS_URL: "redis://redis:6379/0"
+  CELERY_BROKER_URL: "redis://redis:6379/1"
+  CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+
+  # PostgreSQL (internal service)
+  DATABASE_HOST: "postgres"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "networkops"
+
+  # Rate limiting
+  RATE_LIMIT_DEFAULT: "500 per minute"
+  RATE_LIMIT_AUTH: "10 per minute"
+  RATE_LIMIT_COMMANDS: "60 per minute"
+  RATE_LIMIT_READONLY: "1000 per minute"
+
+  # Shutdown
+  SHUTDOWN_TIMEOUT: "30"

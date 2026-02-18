@@ -1,0 +1,14 @@
+{{- if .Values.api.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "networkops.fullname" . }}-api
+  labels:
+    {{- include "networkops.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.api.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "networkops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+{{- end }}

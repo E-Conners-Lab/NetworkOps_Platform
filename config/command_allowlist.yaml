@@ -1,0 +1,53 @@
+# Command Allowlist for the Autonomous Network Agent
+# Operators can tighten or loosen these patterns without code changes.
+#
+# Each pattern is a Python regex anchored with fullmatch().
+# Case-insensitive matching is used.
+
+investigation:
+  - 'show\s+.*'
+  - 'ping\s+.*'
+  - 'traceroute\s+.*'
+  - 'display\s+.*'
+
+remediation:
+  # Interface-level
+  - 'interface\s+\S+'
+  - 'no\s+shutdown'
+  - 'shutdown'
+  # OSPF / BGP resets (exec-mode)
+  - 'clear\s+ip\s+ospf\s+process(\s+\d+)?'
+  - 'clear\s+ip\s+bgp\s+\S+(\s+soft(\s+in|\s+out)?)?'
+  # MTU adjustment (interface-level)
+  - 'ip\s+mtu\s+\d+'
+  - 'mtu\s+\d+'
+  # OSPF interface settings
+  - 'ip\s+ospf\s+(cost|priority|hello-interval|dead-interval|mtu-ignore)\s+.*'
+  # IP address (for rollback scenarios)
+  - 'ip\s+address\s+\d+\.\d+\.\d+\.\d+\s+\d+\.\d+\.\d+\.\d+.*'
+  - 'no\s+ip\s+address\s+.*'
+
+config:
+  - 'interface\s+\S+'
+  - 'description\s+.*'
+  - 'no\s+shutdown'
+  - 'shutdown'
+  - 'ip\s+ospf\s+.*'
+  - 'ip\s+mtu\s+\d+'
+
+blocked:
+  - '.*write\s+erase.*'
+  - '.*erase\s+(startup-config|nvram).*'
+  - '.*reload(\s+.*)?'
+  - '.*crypto\s+key\s+.*'
+  - '.*username\s+.*'
+  - '.*enable\s+secret\s+.*'
+  - '.*enable\s+password\s+.*'
+  - '.*no\s+ip\s+route\s+0\.0\.0\.0\s+0\.0\.0\.0.*'
+  - '.*;\s*.*'
+  - '.*boot\s+system\s+.*'
+  - '.*aaa\s+.*'
+  - '.*snmp-server\s+community\s+.*'
+  - '.*line\s+(con|vty|aux)\s+.*'
+  - '.*router\s+(ospf|bgp|eigrp)\s+.*'
+  - '.*no\s+router\s+.*'

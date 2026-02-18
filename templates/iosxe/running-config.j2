@@ -1,0 +1,137 @@
+{# IOS-XE running-config template — generated from NetBox data #}
+{# Preamble includes: version, service, platform, hostname, boot, VRF, AAA, crypto, QoS #}
+{{ iosxe_preamble }}
+!
+{% for intf in interfaces %}
+interface {{ intf.name }}
+{% if intf.vrf %}
+ vrf forwarding {{ intf.vrf }}
+{% endif %}
+{% if intf.description %}
+ description {{ intf.description }}
+{% endif %}
+{% if intf.dhcp_client_id %}
+ ip dhcp client client-id ascii {{ intf.dhcp_client_id }}
+{% endif %}
+{% if intf.dhcp %}
+ ip address dhcp
+{% elif intf.ip_address %}
+ ip address {{ intf.ip_address }} {{ intf.netmask }}
+{% elif intf.no_ip_address %}
+ no ip address
+{% endif %}
+{% for line in intf.ip_extra_lines %}
+ {{ line }}
+{% endfor %}
+{% if intf.ospf_network_type %}
+ ip ospf network {{ intf.ospf_network_type }}
+{% endif %}
+{% if intf.ospf_process_id is defined and intf.ospf_process_id is not none %}
+ ip ospf {{ intf.ospf_process_id }} area {{ intf.ospf_area }}
+{% endif %}
+{% if intf.shutdown %}
+ shutdown
+{% endif %}
+{% if intf.negotiation_auto %}
+ negotiation auto
+{% endif %}
+{% for line in intf.extra_lines %}
+ {{ line }}
+{% endfor %}
+!
+{% endfor %}
+{% if iosxe_routing_extra %}
+{{ iosxe_routing_extra }}
+!
+{% endif %}
+{% if ospf_enabled %}
+router ospf {{ ospf_process_id }}
+ router-id {{ router_id }}
+{% for area_id, area_type in ospf_areas.items() %}
+ area {{ area_id }} {{ area_type }}
+{% endfor %}
+{% for pi in ospf_passive_interfaces %}
+ passive-interface {{ pi }}
+{% endfor %}
+{% for net in ospf_networks %}
+ network {{ net.network }} {{ net.wildcard }} area {{ net.area }}
+{% endfor %}
+{% if ospf_bfd %}
+ bfd all-interfaces
+{% endif %}
+!
+{% endif %}
+{% if bgp_asn %}
+router bgp {{ bgp_asn }}
+ bgp router-id {{ router_id }}
+ bgp log-neighbor-changes
+{% if bgp_no_default_ipv4 %}
+ no bgp default ipv4-unicast
+{% endif %}
+{% for pg in bgp_peer_groups %}
+ neighbor {{ pg.name }} peer-group
+ neighbor {{ pg.name }} remote-as {{ pg.remote_as }}
+{% if pg.update_source is defined %}
+ neighbor {{ pg.name }} update-source {{ pg.update_source }}
+{% endif %}
+{% endfor %}
+{% for peer in bgp_peers %}
+{% if peer.remote_as is defined %}
+ neighbor {{ peer.neighbor }} remote-as {{ peer.remote_as }}
+{% endif %}
+{% if peer.update_source is defined %}
+ neighbor {{ peer.neighbor }} update-source {{ peer.update_source }}
+{% endif %}
+{% if peer.description is defined %}
+ neighbor {{ peer.neighbor }} description {{ peer.description }}
+{% endif %}
+{% if peer.ebgp_multihop is defined %}
+ neighbor {{ peer.neighbor }} ebgp-multihop {{ peer.ebgp_multihop }}
+{% endif %}
+{% if peer.peer_group is defined %}
+ neighbor {{ peer.neighbor }} peer-group {{ peer.peer_group }}
+{% endif %}
+{% endfor %}
+ !
+{% for af in bgp_address_families %}
+ address-family {{ af.afi }}
+{% for rr in af.rr_client_groups %}
+  neighbor {{ rr }} route-reflector-client
+{% endfor %}
+{% for n in af.neighbors %}
+  neighbor {{ n.peer }} activate
+{% endfor %}
+{% for nhs in af.next_hop_self_peers | default([]) %}
+  neighbor {{ nhs }} next-hop-self
+{% endfor %}
+{% for net in af.networks %}
+  network {{ net.prefix }}{% if net.mask is defined %} mask {{ net.mask }}{% endif %}
+
+{% endfor %}
+ exit-address-family
+ !
+{% endfor %}
+!
+{% endif %}
+{% for route in static_routes %}
+ip route {{ route.prefix }} {{ route.mask }} {{ route.next_hop }}{% if route.ad is defined %} {{ route.ad }}{% endif %}
+
+{% endfor %}
+{% if ntp_config %}
+{% if ntp_config.authenticate %}
+ntp authenticate
+{% endif %}
+{% if ntp_config.source is defined %}
+ntp source {{ ntp_config.source }}
+{% endif %}
+{% if ntp_config.master is defined %}
+ntp master {{ ntp_config.master }}
+{% endif %}
+{% for server in ntp_config.servers %}
+ntp server {{ server.address }}{% if server.source is defined %} source {{ server.source }}{% endif %}
+
+{% endfor %}
+{% endif %}
+!
+{{ iosxe_postamble }}
+end

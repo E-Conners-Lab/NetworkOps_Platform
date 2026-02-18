@@ -1,0 +1,151 @@
+{
+  "test_execution": {
+    "timestamp": "2025-12-28T01:02:39.864170+00:00",
+    "test_type": "Ultimate Load Test - Maximum Capacity",
+    "server": "Gunicorn 4 workers",
+    "endpoint": "/healthz",
+    "system_limits": {
+      "kern_maxfiles": 184320,
+      "kern_maxfilesperproc": 92160,
+      "ulimit_n": "unlimited"
+    }
+  },
+  "progressive_tests": [
+    {
+      "concurrent": 100,
+      "requests": 10000,
+      "rps": 4756.7,
+      "p50_ms": 21,
+      "p99_ms": 29,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 250,
+      "requests": 10000,
+      "rps": 4430.9,
+      "p50_ms": 29,
+      "p99_ms": 59,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 500,
+      "requests": 10000,
+      "rps": 4555.6,
+      "p50_ms": 29,
+      "p99_ms": 153,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 1000,
+      "requests": 10000,
+      "rps": 4503.5,
+      "p50_ms": 29,
+      "p99_ms": 122,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 2000,
+      "requests": 10000,
+      "rps": 4433.2,
+      "p50_ms": 29,
+      "p99_ms": 362,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 3000,
+      "requests": 10000,
+      "rps": 3832.7,
+      "p50_ms": 32,
+      "p99_ms": 444,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 5000,
+      "requests": 10000,
+      "rps": 3839.1,
+      "p50_ms": 33,
+      "p99_ms": 1091,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 7500,
+      "requests": 10000,
+      "rps": 3551.3,
+      "p50_ms": 35,
+      "p99_ms": 2050,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 10000,
+      "requests": 10000,
+      "rps": 3234.5,
+      "p50_ms": 38,
+      "p99_ms": 2052,
+      "failed": 0,
+      "status": "success"
+    }
+  ],
+  "extreme_tests": [
+    {
+      "concurrent": 15000,
+      "requests": 20000,
+      "rps": 2913.21,
+      "p50_ms": 89,
+      "p99_ms": 4036,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 16000,
+      "requests": 17000,
+      "rps": 2498.0,
+      "p50_ms": null,
+      "p99_ms": null,
+      "failed": 0,
+      "status": "success"
+    },
+    {
+      "concurrent": 17000,
+      "requests": 18000,
+      "rps": 0,
+      "failed": "N/A",
+      "status": "failed",
+      "error": "ephemeral port exhaustion"
+    }
+  ],
+  "summary": {
+    "maximum_concurrent_connections": 16000,
+    "breaking_point": 17000,
+    "breaking_reason": "Ephemeral port exhaustion (apr_socket_connect error 49)",
+    "peak_throughput": {
+      "requests_per_sec": 4756.7,
+      "at_concurrent": 100,
+      "note": "Optimal throughput at lower concurrency due to reduced contention"
+    },
+    "high_concurrency_performance": {
+      "10000_concurrent": "3,234 req/sec",
+      "15000_concurrent": "2,913 req/sec",
+      "16000_concurrent": "2,498 req/sec"
+    },
+    "conclusions": [
+      "Server handles 16,000 simultaneous connections with ZERO failures",
+      "Peak throughput of 4,757 req/sec at 100 concurrent connections",
+      "Even at 16,000 concurrent, maintains 2,498 req/sec throughput",
+      "P99 latency scales from 29ms (100 concurrent) to 4,036ms (15,000 concurrent)",
+      "Breaking point is OS ephemeral port limit, not server capacity"
+    ],
+    "production_recommendation": {
+      "optimal_concurrency": "100-500 for best throughput",
+      "maximum_safe_concurrency": 15000,
+      "hard_limit": 16000
+    }
+  }
+}

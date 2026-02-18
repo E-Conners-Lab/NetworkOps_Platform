@@ -1,0 +1,139 @@
+{
+  "timeToOnboard": {
+    "title": "Time to Onboard New Router",
+    "unit": "minutes",
+    "chartType": "bar",
+    "data": [
+      { "label": "Before", "value": 45, "color": "#ef4444" },
+      { "label": "After (ZTP)", "value": 3, "color": "#22c55e" }
+    ],
+    "improvement": "93% faster"
+  },
+
+  "manualSteps": {
+    "title": "Manual Steps Required",
+    "chartType": "bar",
+    "data": [
+      { "label": "Before", "value": 8, "color": "#ef4444" },
+      { "label": "After", "value": 1, "color": "#22c55e" }
+    ],
+    "steps_before": [
+      "Edit devices.py",
+      "Add to active_interfaces dict",
+      "Restart API server",
+      "SSH to router",
+      "Configure NETCONF",
+      "Configure telemetry",
+      "Add to NetBox manually",
+      "Verify health check"
+    ],
+    "steps_after": [
+      "Click '+ Device' in dashboard"
+    ],
+    "improvement": "87% reduction"
+  },
+
+  "codeChangesRequired": {
+    "title": "Code Changes for New Device",
+    "unit": "lines",
+    "chartType": "bar",
+    "data": [
+      { "label": "Before", "value": 12, "color": "#ef4444" },
+      { "label": "After", "value": 0, "color": "#22c55e" }
+    ],
+    "improvement": "Zero code changes needed"
+  },
+
+  "dashboardSyncTime": {
+    "title": "Dashboard Sync Latency",
+    "unit": "seconds",
+    "chartType": "bar",
+    "data": [
+      { "label": "Before (restart required)", "value": 300, "color": "#ef4444" },
+      { "label": "After (auto-refresh)", "value": 30, "color": "#22c55e" }
+    ],
+    "improvement": "90% faster"
+  },
+
+  "automationCoverage": {
+    "title": "Automation Coverage",
+    "chartType": "donut",
+    "before": {
+      "automated": 40,
+      "manual": 60
+    },
+    "after": {
+      "automated": 95,
+      "manual": 5
+    }
+  },
+
+  "featureComparison": {
+    "title": "Feature Comparison",
+    "chartType": "table",
+    "features": [
+      { "feature": "Self-service device onboarding", "before": false, "after": true },
+      { "feature": "Real-time NetBox sync", "before": false, "after": true },
+      { "feature": "Dynamic interface discovery", "before": false, "after": true },
+      { "feature": "Zero-touch provisioning", "before": false, "after": true },
+      { "feature": "Auto NETCONF config", "before": false, "after": true },
+      { "feature": "Auto telemetry setup", "before": false, "after": true },
+      { "feature": "No-code device additions", "before": false, "after": true }
+    ]
+  },
+
+  "onboardingTimeline": {
+    "title": "New Router Onboarding Timeline",
+    "chartType": "timeline",
+    "unit": "seconds",
+    "steps": [
+      { "step": "Router boot", "start": 0, "duration": 60 },
+      { "step": "DHCP lease", "start": 60, "duration": 5 },
+      { "step": "ZTP config download", "start": 65, "duration": 10 },
+      { "step": "Config apply", "start": 75, "duration": 30 },
+      { "step": "NETCONF initialize", "start": 105, "duration": 60 },
+      { "step": "Add to NetBox (1 click)", "start": 165, "duration": 5 },
+      { "step": "Dashboard sync", "start": 170, "duration": 30 },
+      { "step": "Health check pass", "start": 200, "duration": 5 }
+    ],
+    "totalTime": 205
+  },
+
+  "ztpConfigBreakdown": {
+    "title": "ZTP Config Components",
+    "chartType": "pie",
+    "data": [
+      { "label": "NETCONF", "value": 2, "description": "Core API access" },
+      { "label": "Telemetry", "value": 12, "description": "3 subscriptions" },
+      { "label": "Security", "value": 8, "description": "SSH, credentials" },
+      { "label": "Base Config", "value": 6, "description": "Hostname, DNS, etc" }
+    ],
+    "totalLines": 28
+  },
+
+  "integrationPoints": {
+    "title": "System Integration",
+    "chartType": "sankey",
+    "nodes": ["New Router", "DHCP Server", "ZTP Server", "NetBox", "Dashboard", "Telemetry Collector"],
+    "flows": [
+      { "from": "New Router", "to": "DHCP Server", "label": "IP + Option 67" },
+      { "from": "DHCP Server", "to": "ZTP Server", "label": "Config URL" },
+      { "from": "ZTP Server", "to": "New Router", "label": "base-config.cfg" },
+      { "from": "Dashboard", "to": "NetBox", "label": "Create device" },
+      { "from": "NetBox", "to": "Dashboard", "label": "30s sync" },
+      { "from": "New Router", "to": "Telemetry Collector", "label": "gRPC stream" },
+      { "from": "New Router", "to": "Dashboard", "label": "NETCONF health" }
+    ]
+  },
+
+  "keyMetrics": {
+    "title": "Key Improvements",
+    "chartType": "stats",
+    "metrics": [
+      { "label": "Onboarding Time", "before": "45 min", "after": "3 min", "icon": "clock" },
+      { "label": "Manual Steps", "before": "8", "after": "1", "icon": "list" },
+      { "label": "Code Changes", "before": "12 lines", "after": "0", "icon": "code" },
+      { "label": "Sync Latency", "before": "5 min", "after": "30 sec", "icon": "refresh" }
+    ]
+  }
+}

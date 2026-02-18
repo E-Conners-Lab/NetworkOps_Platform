@@ -1,0 +1,24 @@
+device: R3
+intent:
+  ospf_neighbors:
+    - neighbor_id: "198.51.100.1"
+      expected_state: "FULL"
+      severity: critical
+    - neighbor_id: "198.51.100.4"
+      expected_state: "FULL"
+      severity: critical
+
+  bgp_peers:
+    - peer_ip: "172.20.20.5"
+      peer_asn: 65100
+      expected_state: "Established"
+      severity: critical
+
+  interfaces:
+    - name: "Loopback0"
+      expected_ip: "198.51.100.3/32"
+      expected_status: "up"
+      severity: critical
+    - name: "GigabitEthernet4"
+      expected_status: "up"
+      severity: warning

@@ -1,0 +1,196 @@
+# NetworkOps Helm Chart Values
+# Override these values to customize your deployment
+
+# Global settings
+global:
+  imagePullSecrets: []
+  storageClass: ""
+
+# API Server Configuration
+api:
+  replicaCount: 2
+  image:
+    repository: networkops-api
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  # Health probes
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 5001
+    initialDelaySeconds: 10
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /readyz
+      port: 5001
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 5001
+
+  # Environment variables
+  env:
+    LOG_LEVEL: INFO
+    LOG_FORMAT: json
+    APP_VERSION: "2.0.0"
+
+  # Node selector, tolerations, affinity
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Celery Worker Configuration
+celeryWorker:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: networkops-worker
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+# Celery Beat (Scheduler)
+celeryBeat:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# External Redis (used when redis.enabled is false)
+externalRedis:
+  url: ""  # e.g., "redis://user:pass@host:6379/0"
+
+# Redis Configuration
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: ""  # Set via --set or values override
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+# External PostgreSQL (used when postgresql.enabled is false)
+externalPostgresql:
+  url: ""  # e.g., "postgresql://user:pass@host:5432/networkops"
+
+# PostgreSQL Configuration
+postgresql:
+  enabled: true
+  auth:
+    username: networkops
+    password: ""  # Set via --set or values override
+    database: networkops
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+  hosts:
+    - host: networkops.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: networkops-tls
+  #    hosts:
+  #      - networkops.local
+
+# Rate Limiting
+rateLimit:
+  default: "500 per minute"
+  auth: "10 per minute"
+  commands: "60 per minute"
+  readonly: "1000 per minute"
+
+# Device Configuration
+devices:
+  username: admin
+  password: ""  # Set via --set or values override
+  # Device inventory (optional - can use NetBox instead)
+  inventory: {}
+
+# NetBox Integration
+netbox:
+  enabled: false
+  url: ""
+  apiToken: ""
+
+# Monitoring
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    namespace: ""
+
+# Security Context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Service Account
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}

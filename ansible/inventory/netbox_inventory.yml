@@ -1,0 +1,87 @@
+---
+# NetBox Dynamic Inventory for Ansible
+# Uses the netbox.netbox.nb_inventory plugin
+# Requires: ansible-galaxy collection install netbox.netbox
+#
+# Environment variables required:
+#   NETBOX_URL - NetBox API URL (e.g., http://localhost:8000)
+#   NETBOX_API_TOKEN - API token for authentication
+
+plugin: netbox.netbox.nb_inventory
+api_endpoint: "{{ lookup('env', 'NETBOX_URL') | default('http://localhost:8000', true) }}"
+token: "{{ lookup('env', 'NETBOX_API_TOKEN') }}"
+validate_certs: false
+
+# Cache settings (optional, improves performance)
+cache: true
+cache_plugin: jsonfile
+cache_timeout: 300
+cache_connection: /tmp/netbox_inventory_cache
+
+# Query options
+config_context: true
+flatten_config_context: true
+flatten_custom_fields: true
+
+# Group devices by these attributes
+group_by:
+  - sites
+  - device_roles
+  - platforms
+  - tags
+
+# Compose host variables from NetBox data
+compose:
+  # Management IP (primary IPv4)
+  ansible_host: >-
+    {{ primary_ip4.address | default('') | ansible.utils.ipaddr('address') if primary_ip4 else '' }}
+
+  # Connection type based on device type
+  ansible_connection: >-
+    {% if custom_fields.netmiko_device_type is defined and custom_fields.netmiko_device_type.startswith('containerlab_') %}
+    local
+    {% elif custom_fields.netmiko_device_type == 'linux' %}
+    ssh
+    {% elif custom_fields.netmiko_device_type == 'cisco_xe' %}
+    ansible.netcommon.network_cli
+    {% else %}
+    ssh
+    {% endif %}
+
+  # Network OS for network devices
+  ansible_network_os: >-
+    {% if custom_fields.netmiko_device_type == 'cisco_xe' %}
+    cisco.ios.ios
+    {% elif custom_fields.netmiko_device_type == 'containerlab_srlinux' %}
+    nokia.srlinux.srlinux
+    {% elif custom_fields.netmiko_device_type == 'containerlab_frr' %}
+    frr.frr.frr
+    {% else %}
+    {{ omit }}
+    {% endif %}
+
+  # Pass through custom fields
+  netmiko_device_type: "{{ custom_fields.netmiko_device_type | default(omit) }}"
+  container_name: "{{ custom_fields.container_name | default(omit) }}"
+  netconf_enabled: "{{ custom_fields.netconf_enabled | default(false) }}"
+
+# Create additional groups based on custom fields
+keyed_groups:
+  # Group by netmiko device type (e.g., platform_cisco_xe)
+  - key: custom_fields.netmiko_device_type | default('unknown')
+    prefix: platform
+    separator: '_'
+
+  # Group by site (e.g., site_eve_ng_lab)
+  - key: site.slug | default('unknown')
+    prefix: site
+    separator: '_'
+
+  # Group by device role (e.g., role_router)
+  - key: device_role.slug | default('unknown')
+    prefix: role
+    separator: '_'
+
+# Filter to only include active devices
+query_filters:
+  - status: active

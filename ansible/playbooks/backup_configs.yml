@@ -1,0 +1,75 @@
+---
+- name: Backup device configurations
+  hosts: cisco_routers:cisco_switches
+  gather_facts: false
+
+  vars:
+    backup_dir: "{{ playbook_dir }}/../../backups"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+
+  tasks:
+    - name: Create backup directory
+      delegate_to: localhost
+      run_once: true
+      ansible.builtin.file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Get running configuration
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: config_output
+
+    - name: Save configuration to file
+      delegate_to: localhost
+      ansible.builtin.copy:
+        content: "{{ config_output.stdout[0] }}"
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}_{{ timestamp }}.cfg"
+        mode: '0644'
+
+    - name: Display backup status
+      ansible.builtin.debug:
+        msg: "Backup saved to {{ backup_dir }}/{{ inventory_hostname }}_{{ timestamp }}.cfg"
+
+
+- name: Backup containerlab configurations
+  hosts: containerlab
+  gather_facts: false
+  connection: local
+
+  vars:
+    backup_dir: "{{ playbook_dir }}/../../backups"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+
+  tasks:
+    - name: Backup FRRouting configuration
+      when: containerlab_type is defined and containerlab_type == 'frr'
+      block:
+        - name: Get FRR running config
+          ansible.builtin.command:
+            cmd: "multipass exec {{ containerlab_vm }} -- sudo docker exec {{ container_name }} vtysh -c 'show running-config'"
+          register: frr_config
+          changed_when: false
+
+        - name: Save FRR config
+          ansible.builtin.copy:
+            content: "{{ frr_config.stdout }}"
+            dest: "{{ backup_dir }}/{{ inventory_hostname }}_{{ timestamp }}.cfg"
+            mode: '0644'
+
+    - name: Backup SR Linux configuration
+      when: containerlab_type is defined and containerlab_type == 'srlinux'
+      block:
+        - name: Get SR Linux running config
+          ansible.builtin.command:
+            cmd: "multipass exec {{ containerlab_vm }} -- sudo docker exec {{ container_name }} sr_cli 'info from running'"
+          register: srlinux_config
+          changed_when: false
+
+        - name: Save SR Linux config
+          ansible.builtin.copy:
+            content: "{{ srlinux_config.stdout }}"
+            dest: "{{ backup_dir }}/{{ inventory_hostname }}_{{ timestamp }}.cfg"
+            mode: '0644'

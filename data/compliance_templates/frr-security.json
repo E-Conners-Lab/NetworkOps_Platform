@@ -1,0 +1,53 @@
+{
+  "name": "frr-security",
+  "description": "Security compliance template for FRRouting devices",
+  "device_roles": ["router"],
+  "platform": "frr",
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "FRR-SEC-001",
+      "name": "BGP Password Authentication",
+      "description": "BGP peers should use password authentication",
+      "section": "router",
+      "severity": "high",
+      "match_type": "regex",
+      "pattern": "neighbor \\S+ password",
+      "remediation_template": "router bgp <ASN>\n neighbor <PEER_IP> password <PASSWORD>",
+      "weight": 8
+    },
+    {
+      "id": "FRR-SEC-002",
+      "name": "No Debug Logging in Production",
+      "description": "Debug logging should not be enabled in production",
+      "section": "global",
+      "severity": "medium",
+      "match_type": "absent",
+      "pattern": "debug ",
+      "remediation_template": "no debug all",
+      "weight": 6
+    },
+    {
+      "id": "FRR-SEC-003",
+      "name": "Prefix-List Usage",
+      "description": "BGP peers should have prefix-lists applied",
+      "section": "router",
+      "severity": "high",
+      "match_type": "regex",
+      "pattern": "neighbor \\S+ prefix-list",
+      "remediation_template": "router bgp <ASN>\n neighbor <PEER_IP> prefix-list <NAME> in",
+      "weight": 8
+    },
+    {
+      "id": "FRR-SEC-004",
+      "name": "Service Password Encryption",
+      "description": "Passwords should be encrypted",
+      "section": "global",
+      "severity": "high",
+      "match_type": "present",
+      "pattern": "service password-encryption",
+      "remediation_template": "service password-encryption",
+      "weight": 8
+    }
+  ]
+}
