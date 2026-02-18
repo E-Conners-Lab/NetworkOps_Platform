@@ -240,6 +240,16 @@ elif command -v npm &> /dev/null; then
         cd ..
         print_step "Dashboard dependencies installed"
     fi
+    # Build the React frontend
+    if [[ ! -d "dashboard/build" ]]; then
+        print_info "Building dashboard frontend..."
+        cd dashboard
+        npm run build --silent 2>/dev/null
+        cd ..
+        print_step "Dashboard frontend built"
+    else
+        print_step "Dashboard frontend already built"
+    fi
 else
     print_warn "Skipping dashboard setup (npm not found)"
 fi
