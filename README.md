@@ -467,6 +467,71 @@ DEVICES = {
 
 ---
 
+## Using a Local LLM
+
+The RAG chatbot uses Claude by default, but you can swap in a local LLM if you prefer to keep everything on-prem.
+
+### What already runs locally
+
+- **Embeddings** — `sentence-transformers` (`all-MiniLM-L6-v2`) runs locally for all vector search and document indexing. No external API calls.
+- **MCP tools** — The 178 MCP tools use the standard MCP protocol over SSH/NETCONF. Any MCP-compatible client can consume them, and the HTTP proxy (`mcp_http_proxy.py`) exposes them as REST endpoints for any LLM or script.
+
+### What requires changes for a local LLM
+
+The RAG chat panel (`rag/query.py`) is wired to the Anthropic SDK. To point it at a local model (Ollama, vLLM, LM Studio, llama.cpp, etc.), you need to modify three files:
+
+**1. `rag/query.py`** — Replace the Anthropic client with an OpenAI-compatible client:
+
+```python
+# Before (Anthropic)
+import anthropic
+client = anthropic.Anthropic(api_key=api_key)
+response = client.messages.create(
+    model=model,
+    max_tokens=1024,
+    system=self.SYSTEM_PROMPT,
+    messages=[{"role": "user", "content": user_message}]
+)
+
+# After (OpenAI-compatible — works with Ollama, vLLM, LM Studio)
+from openai import OpenAI
+client = OpenAI(base_url="http://localhost:11434/v1", api_key="unused")
+response = client.chat.completions.create(
+    model="llama3.1:70b",
+    max_tokens=1024,
+    messages=[
+        {"role": "system", "content": self.SYSTEM_PROMPT},
+        {"role": "user", "content": user_message}
+    ]
+)
+```
+
+**2. `rag/sanitizer.py`** — Update the model allowlist (lines 15–22) to include your local model names, or remove the allowlist check entirely.
+
+**3. `dashboard/routes/chat.py`** — Change the default model from `claude-sonnet-4-20250514` to your local model name.
+
+### Tool-calling (live device queries)
+
+The RAG chat can execute live SSH commands against your devices mid-conversation (e.g., "run a health check"). This uses Anthropic's `tool_use` block format. If you want this working with a local LLM:
+
+- The tool-calling loop in `rag/query.py` (around line 406) needs to be adapted to the OpenAI function-calling schema
+- You'll need a model with solid function-calling support — **Llama 3.1 70B+**, **Qwen 2.5 72B**, or **Mistral Large** work well
+- Smaller models (7B/8B) will struggle with multi-step tool chains
+
+If you only need RAG Q&A (ask questions about indexed documentation) without live device queries, you can skip the tool-calling refactor entirely. Any local model that handles basic chat completions will work.
+
+### Recommended local setups
+
+| Setup | Model | VRAM Required | Tool-calling |
+|-------|-------|---------------|-------------|
+| **Ollama** | `llama3.1:70b` | ~40 GB | Yes |
+| **Ollama** | `qwen2.5:32b` | ~20 GB | Yes |
+| **Ollama** | `llama3.1:8b` | ~5 GB | RAG only (no tools) |
+| **vLLM** | Any HuggingFace model | Varies | Yes (with OpenAI server) |
+| **LM Studio** | Any GGUF model | Varies | Yes (OpenAI-compatible API) |
+
+---
+
 ## Performance
 
 Tested on MacBook Pro M4, Gunicorn with 4 workers:
