@@ -93,18 +93,4 @@ export const API = {
   impactEvents: `${API_BASE_URL}/api/impact/events`,
   driftWithImpact: (device: string) => `${API_BASE_URL}/api/impact/trending/${device}/drift-impact`,
 
-  // Agent Operations
-  agentStatus: `${API_BASE_URL}/api/agent/status`,
-  agentDecisions: `${API_BASE_URL}/api/agent/decisions`,
-  agentDecision: (id: string) => `${API_BASE_URL}/api/agent/decisions/${id}`,
-  agentApprove: (id: string) => `${API_BASE_URL}/api/agent/decisions/${id}/approve`,
-  agentReject: (id: string) => `${API_BASE_URL}/api/agent/decisions/${id}/reject`,
-  agentAuditLog: `${API_BASE_URL}/api/agent/audit-log`,
-  agentReports: `${API_BASE_URL}/api/agent/reports`,
-  agentReport: (date: string) => `${API_BASE_URL}/api/agent/reports/${date}`,
-  agentMetrics: `${API_BASE_URL}/api/agent/metrics`,
-  agentEffectiveness: `${API_BASE_URL}/api/agent/effectiveness`,
-  agentSSE: `${API_BASE_URL}/api/agent/events/stream`,
-  agentEmergencyStop: `${API_BASE_URL}/api/agent/emergency-stop`,
-  agentEmergencyResume: `${API_BASE_URL}/api/agent/emergency-resume`,
 };

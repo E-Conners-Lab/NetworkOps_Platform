@@ -212,20 +212,6 @@ def prometheus_metrics():
     except Exception:
         pass
 
-    # ---- Agent Rate Limiter ----
-    try:
-        from agents.execution.rate_limiter import RateLimiter
-        rl = RateLimiter()
-        lines.append('')
-        lines.append('# HELP mcp_agent_actions_hour Agent actions in current hour window')
-        lines.append('# TYPE mcp_agent_actions_hour gauge')
-        lines.append(f'mcp_agent_actions_hour {rl.current_count}')
-        lines.append('# HELP mcp_agent_circuit_open Agent rate limiter circuit open')
-        lines.append('# TYPE mcp_agent_circuit_open gauge')
-        lines.append(f'mcp_agent_circuit_open {1 if rl.is_limited else 0}')
-    except Exception:
-        pass
-
     response_text = '\n'.join(lines) + '\n'
     return response_text, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 

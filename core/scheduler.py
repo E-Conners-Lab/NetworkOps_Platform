@@ -70,7 +70,6 @@ class JobType(str, Enum):
     BULK_COMMAND = "bulk_command"
     LLDP_DISCOVERY = "lldp_discovery"
     SNMP_POLL = "snmp_poll"
-    DAILY_REPORT = "daily_report"
     CUSTOM = "custom"
 
 
@@ -255,14 +254,6 @@ async def execute_snmp_poll(device_name: str = None) -> dict:
     return json.loads(result)
 
 
-async def execute_daily_report() -> dict:
-    """Generate the agent daily report."""
-    from agents.reporting.daily_report import get_report_generator
-    generator = get_report_generator()
-    report = await generator.generate()
-    return report.to_dict()
-
-
 # Job type to executor mapping
 JOB_EXECUTORS = {
     JobType.HEALTH_CHECK: execute_health_check,
@@ -274,7 +265,6 @@ JOB_EXECUTORS = {
     JobType.BULK_COMMAND: execute_bulk_command,
     JobType.LLDP_DISCOVERY: execute_lldp_discovery,
     JobType.SNMP_POLL: execute_snmp_poll,
-    JobType.DAILY_REPORT: execute_daily_report,
 }
 
 
@@ -728,5 +718,4 @@ async def get_supported_job_types() -> list[dict]:
         {"type": "bulk_command", "description": "Send command to multiple devices", "params": ["command", "devices"]},
         {"type": "lldp_discovery", "description": "Run LLDP topology discovery", "params": []},
         {"type": "snmp_poll", "description": "Poll device(s) via SNMP", "params": ["device_name"]},
-        {"type": "daily_report", "description": "Generate agent daily operational report", "params": []},
     ]
