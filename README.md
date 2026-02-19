@@ -11,6 +11,70 @@ NetworkOps is a network automation platform built on the Model Context Protocol 
 
 ---
 
+## Screenshots
+
+### Topology Dashboard
+Interactive force-directed network topology with device health indicators, legend, and network stats.
+
+![Topology Dashboard](docs/screenshots/topology-dashboard.png)
+
+### Device Details
+Click any device to view its properties, interface status, and remediation controls.
+
+![Device Details](docs/screenshots/device-details.png)
+
+### OSPF Adjacencies Overlay
+Visualize OSPF adjacencies with area labels directly on topology links.
+
+![OSPF Adjacencies](docs/screenshots/ospf-adjacencies.png)
+
+### BGP Sessions Overlay
+BGP session status with AS number annotations on peering links.
+
+![BGP Sessions](docs/screenshots/bgp-sessions.png)
+
+### DMVPN Fabric Status
+DMVPN hub-and-spoke overlay with peer state table showing tunnel IPs, NBMA addresses, and uptime.
+
+![DMVPN Fabric](docs/screenshots/dmvpn-fabric.png)
+
+### Ping Sweep with Latency Heatmap
+Bulk ping results visualized as a color-coded latency heatmap across the topology.
+
+![Ping Sweep](docs/screenshots/ping-sweep.png)
+
+### Command Terminal
+Execute show commands on any device with full output display.
+
+![Command Terminal](docs/screenshots/command-terminal.png)
+
+### AI Documentation Assistant
+RAG-powered chat with live network queries — ask questions in natural language and get answers with source citations.
+
+![AI Chat](docs/screenshots/ai-chat.png)
+
+### Real-time Telemetry (MDT)
+Live CPU, memory, interface traffic, and counters streamed via gRPC at 5-second intervals.
+
+![MDT Telemetry](docs/screenshots/mdt-telemetry.png)
+
+### Impact Analysis
+Predict the blast radius of a configuration change before executing it.
+
+![Impact Analysis](docs/screenshots/impact-analysis.png)
+
+### Intent Drift Engine
+YAML-defined expected state validation with per-item compliance checks and violation alerts.
+
+![Intent Drift Engine](docs/screenshots/intent-drift-engine.png)
+
+### Subnet Calculator
+Built-in subnet calculator with VLSM split and quick reference tables.
+
+![Subnet Calculator](docs/screenshots/subnet-calculator.png)
+
+---
+
 ## Quick Start
 
 ### Demo Mode (no network devices needed)
