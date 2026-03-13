@@ -91,12 +91,15 @@ Or manually:
 
 ```bash
 git clone https://github.com/E-Conners-Lab/NetworkOps_Platform.git && cd NetworkOps_Platform
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt        # or: uv pip install -r requirements.txt
+uv venv --python 3.11                  # downloads Python 3.11 if needed
+source .venv/bin/activate
+uv pip install -r requirements.txt
 cd dashboard && npm install && npm run build && cd ..
 JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 DEMO_MODE=true JWT_SECRET=$JWT_SECRET python dashboard/api_server.py
 ```
+
+> **Don't have uv?** Install it with `curl -LsSf https://astral.sh/uv/install.sh | sh`. You can also use `python3.11 -m venv .venv` and `pip install -r requirements.txt` instead.
 
 ### With Real Devices
 
