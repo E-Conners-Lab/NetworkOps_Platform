@@ -371,6 +371,23 @@ Use the quickstart script to configure NetworkOps for your own network devices:
 
 The script detects [uv](https://docs.astral.sh/uv/) automatically for faster dependency installation.
 
+### Containerlab Deployment Options
+
+By default, the platform sends containerlab commands through a **Multipass VM** (`multipass exec containerlab -- ...`). If you're running containerlab directly on the same host as the platform (e.g., a Proxmox Linux VM or bare-metal Linux server), set `CONTAINERLAB_LOCAL=true` in your `.env` to bypass Multipass and run Docker commands locally:
+
+```bash
+# In .env
+CONTAINERLAB_LOCAL=true
+CONTAINERLAB_TOPOLOGY_PATH=/path/to/datacenter.clab.yml
+```
+
+Deploy the included topology:
+
+```bash
+cd containerlab
+sudo containerlab deploy -t datacenter.clab.yml
+```
+
 ### Supported Device Types
 
 | Platform | `device_type` | Features |

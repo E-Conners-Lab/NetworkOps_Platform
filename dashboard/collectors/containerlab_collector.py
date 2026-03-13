@@ -40,10 +40,15 @@ CLAB_DEVICES = {
 CONTAINERLAB_VM = os.getenv('CONTAINERLAB_VM', 'containerlab')
 
 
+
 async def run_multipass_command(command: str, timeout: int = 30) -> str:
-    """Run a command inside the Multipass VM."""
+    """Run a command on the containerlab host (locally or via Multipass)."""
     try:
-        full_command = f"multipass exec {CONTAINERLAB_VM} -- {command}"
+        containerlab_local = os.getenv("CONTAINERLAB_LOCAL", "false").lower() == "true"
+        if containerlab_local:
+            full_command = command
+        else:
+            full_command = f"multipass exec {CONTAINERLAB_VM} -- {command}"
         process = await asyncio.create_subprocess_shell(
             full_command,
             stdout=asyncio.subprocess.PIPE,
@@ -64,7 +69,7 @@ async def run_multipass_command(command: str, timeout: int = 30) -> str:
         logger.error(f"Command timed out: {command}")
         return ""
     except Exception as e:
-        logger.error(f"Failed to run multipass command: {e}")
+        logger.error(f"Failed to run command: {e}")
         return ""
 
 

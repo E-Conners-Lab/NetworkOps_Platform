@@ -82,11 +82,18 @@ def _refresh_containerlab_docker_ips():
             return
 
         # Single docker inspect call for all containers
-        cmd = [
-            "multipass", "exec", "containerlab", "--",
-            "docker", "inspect",
-            "--format", "{{.Name}} {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
-        ] + list(container_to_device.keys())
+        from core.containerlab import _is_containerlab_local
+        if _is_containerlab_local():
+            cmd = [
+                "docker", "inspect",
+                "--format", "{{.Name}} {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+            ] + list(container_to_device.keys())
+        else:
+            cmd = [
+                "multipass", "exec", "containerlab", "--",
+                "docker", "inspect",
+                "--format", "{{.Name}} {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+            ] + list(container_to_device.keys())
 
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 

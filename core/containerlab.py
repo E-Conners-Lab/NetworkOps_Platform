@@ -42,6 +42,23 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+# When True, run docker commands locally instead of via multipass exec.
+# Set CONTAINERLAB_LOCAL=true when containerlab runs on the same host as the platform.
+# Evaluated lazily so .env is loaded before first access.
+_containerlab_local_cache = None
+
+
+def _is_containerlab_local() -> bool:
+    """Check if containerlab commands should run locally (lazy, cached)."""
+    global _containerlab_local_cache
+    if _containerlab_local_cache is None:
+        _containerlab_local_cache = os.getenv("CONTAINERLAB_LOCAL", "false").lower() == "true"
+    return _containerlab_local_cache
+
+
+# Keep module-level name for backward compatibility (reads on access via property-like usage)
+# Code should use _is_containerlab_local() for correct lazy evaluation.
+
 # Shell metacharacters that must never appear in user-supplied commands
 # interpolated into shell strings (subprocess via bash -c).
 _DANGEROUS_SHELL_CHARS = [';', '&&', '||', '|', '`', '$(', '${', '>', '<', '\x00']
@@ -109,9 +126,22 @@ CONTAINERLAB_TOPOLOGY_PATH = os.getenv(
 )
 
 
+def _build_exec_command(shell_command: str) -> list[str]:
+    """
+    Build the subprocess argument list for running a shell command
+    on the containerlab host.
+
+    In local mode (CONTAINERLAB_LOCAL=true), runs directly via bash.
+    Otherwise, wraps the command with multipass exec.
+    """
+    if _is_containerlab_local():
+        return ["bash", "-c", shell_command]
+    return ["multipass", "exec", _get_containerlab_vm(), "--", "bash", "-c", shell_command]
+
+
 def run_command(device_name: str, command: str, timeout: int = 60) -> str:
     """
-    Run a command on a containerlab device via multipass + docker exec.
+    Run a command on a containerlab device via docker exec.
 
     Args:
         device_name: Name of the containerlab device (e.g., "edge1", "spine1")
@@ -155,7 +185,7 @@ def run_command(device_name: str, command: str, timeout: int = 60) -> str:
 
     try:
         result = subprocess.run(
-            ["multipass", "exec", _get_containerlab_vm(), "--", "bash", "-c", docker_cmd],
+            _build_exec_command(docker_cmd),
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -212,7 +242,7 @@ def check_health(device_name: str) -> dict:
     try:
         check_cmd = f"sudo docker inspect -f '{{{{.State.Running}}}}' {container}"
         proc = subprocess.run(
-            ["multipass", "exec", _get_containerlab_vm(), "--", "bash", "-c", check_cmd],
+            _build_exec_command(check_cmd),
             capture_output=True,
             text=True,
             timeout=10,
@@ -295,7 +325,7 @@ def get_container_stats(device_name: str) -> Optional[dict]:
             f"--format '{{{{.CPUPerc}}}} {{{{.MemUsage}}}}'"
         )
         proc = subprocess.run(
-            ["multipass", "exec", _get_containerlab_vm(), "--", "bash", "-c", stats_cmd],
+            _build_exec_command(stats_cmd),
             capture_output=True,
             text=True,
             timeout=10,
@@ -341,7 +371,10 @@ def _run_multipass_command(
     stdin_data: str = None,
 ) -> subprocess.CompletedProcess:
     """
-    Run a command on the containerlab VM via multipass.
+    Run a command on the containerlab host.
+
+    In local mode (CONTAINERLAB_LOCAL=true), runs directly via bash.
+    Otherwise, wraps the command with multipass exec.
 
     Args:
         command: Shell command to execute
@@ -359,7 +392,7 @@ def _run_multipass_command(
 
     try:
         result = subprocess.run(
-            ["multipass", "exec", _get_containerlab_vm(), "--", "bash", "-c", command],
+            _build_exec_command(command),
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -368,9 +401,13 @@ def _run_multipass_command(
         return result
     except subprocess.TimeoutExpired:
         raise ContainerlabConnectionError(
-            f"{log_prefix}Timeout connecting to containerlab VM after {timeout}s"
+            f"{log_prefix}Timeout connecting to containerlab host after {timeout}s"
         )
     except FileNotFoundError:
+        if _is_containerlab_local():
+            raise ContainerlabConnectionError(
+                f"{log_prefix}bash not found"
+            )
         raise ContainerlabConnectionError(
             f"{log_prefix}Multipass not found - is it installed?"
         )
@@ -380,15 +417,32 @@ def _run_multipass_command(
 
 def is_vm_running(correlation_id: str = "") -> bool:
     """
-    Check if the containerlab VM is running.
+    Check if the containerlab host is reachable.
+
+    In local mode, checks that Docker is available.
+    Otherwise, checks if the Multipass VM is running.
 
     Args:
         correlation_id: For log tracing
 
     Returns:
-        True if VM is running, False otherwise
+        True if host is reachable, False otherwise
     """
     log_prefix = f"[{correlation_id}] " if correlation_id else ""
+
+    if _is_containerlab_local():
+        try:
+            result = subprocess.run(
+                ["docker", "info"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            return result.returncode == 0
+        except Exception as e:
+            logger.warning(f"{log_prefix}Failed to check Docker status: {e}")
+            return False
+
     vm_name = _get_containerlab_vm()
 
     try:

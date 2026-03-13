@@ -19,7 +19,6 @@ import defusedxml.ElementTree as ET
 
 from config.devices import (
     DEVICES,
-    CONTAINERLAB_VM,
     is_containerlab_device,
     get_scrapli_device,
 )
@@ -28,6 +27,7 @@ from core.containerlab import (
     run_command as run_containerlab_command,
     check_health as check_containerlab_health,
     _validate_shell_safe,
+    _build_exec_command,
 )
 from security.command_policy import validate_command
 from core.scrapli_manager import get_ios_xe_connection, get_linux_connection
@@ -331,7 +331,7 @@ async def send_config(device_name: str, commands: str) -> str:
 
         try:
             result = subprocess.run(
-                ["multipass", "exec", CONTAINERLAB_VM, "--", "bash", "-c", docker_cmd],
+                _build_exec_command(docker_cmd),
                 capture_output=True,
                 text=True,
                 timeout=60

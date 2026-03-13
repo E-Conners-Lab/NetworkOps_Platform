@@ -153,7 +153,7 @@ def get_containerlab_images():
         )
 
         if not is_vm_running():
-            raise ServiceUnavailableError("Containerlab VM is not running. Start it with: multipass start containerlab")
+            raise ServiceUnavailableError("Containerlab host is not reachable. Check Docker is running or start the Multipass VM.")
 
         images = list_available_images()
         kinds = get_node_kinds()

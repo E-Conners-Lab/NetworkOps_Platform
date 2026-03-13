@@ -86,6 +86,7 @@ Claude API with tool-calling for live network queries mid-conversation.
 - **Credentials**: Lazy-loaded from HashiCorp Vault with `.env` fallback, TTL-based cache (5min default)
 - **Async throughout**: FastMCP async server, asyncio+scrapli for SSH, async NETCONF
 - **DEMO_MODE**: Set `DEMO_MODE=true` in `.env` to run without real network devices
+- **Containerlab execution**: All containerlab commands flow through `_build_exec_command()` in `core/containerlab.py`. Set `CONTAINERLAB_LOCAL=true` to run Docker commands directly (bare-metal/VM), or leave `false` to route through Multipass
 
 ## Testing Notes
 

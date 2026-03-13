@@ -12,7 +12,7 @@ from flask import Blueprint, jsonify, request
 from netmiko import ConnectHandler
 from core.errors import safe_error_response, NotFoundError, ValidationError
 from dashboard.auth import jwt_required, permission_required
-from core.containerlab import validate_container_name
+from core.containerlab import validate_container_name, _build_exec_command
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ def get_containerlab_health(device_name):
         # Get container status via docker inspect
         inspect_cmd = f"sudo docker inspect -f '{{{{.State.Status}}}}' {container}"
         proc = subprocess.run(
-            ["multipass", "exec", CONTAINERLAB_VM, "--", "bash", "-c", inspect_cmd],
+            _build_exec_command(inspect_cmd),
             capture_output=True,
             text=True,
             timeout=10
@@ -147,7 +147,7 @@ def get_containerlab_health(device_name):
         # Get container uptime via docker inspect StartedAt
         uptime_cmd = f"sudo docker inspect -f '{{{{.State.StartedAt}}}}' {container}"
         proc = subprocess.run(
-            ["multipass", "exec", CONTAINERLAB_VM, "--", "bash", "-c", uptime_cmd],
+            _build_exec_command(uptime_cmd),
             capture_output=True,
             text=True,
             timeout=10
@@ -178,7 +178,7 @@ def get_containerlab_health(device_name):
         # Get memory usage via docker stats
         stats_cmd = f"sudo docker stats --no-stream --format '{{{{.MemUsage}}}} {{{{.MemPerc}}}}' {container}"
         proc = subprocess.run(
-            ["multipass", "exec", CONTAINERLAB_VM, "--", "bash", "-c", stats_cmd],
+            _build_exec_command(stats_cmd),
             capture_output=True,
             text=True,
             timeout=15
@@ -197,7 +197,7 @@ def get_containerlab_health(device_name):
         # Get interfaces via ip -br addr
         intf_cmd = f"sudo docker exec {container} ip -br addr"
         proc = subprocess.run(
-            ["multipass", "exec", CONTAINERLAB_VM, "--", "bash", "-c", intf_cmd],
+            _build_exec_command(intf_cmd),
             capture_output=True,
             text=True,
             timeout=10
