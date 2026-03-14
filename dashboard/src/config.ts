@@ -4,10 +4,13 @@
  */
 
 // API base URL - used for all REST API calls
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+// Empty string = relative URLs (works when frontend is served by the Flask API).
+// Override with REACT_APP_API_URL at build time for split frontend/backend deployments.
+export const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 // WebSocket URL - used for Socket.IO connection
-export const WS_URL = process.env.REACT_APP_WS_URL || API_BASE_URL;
+// Must be absolute for Socket.IO; falls back to current page origin.
+export const WS_URL = process.env.REACT_APP_WS_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
 // API endpoints
 export const API = {

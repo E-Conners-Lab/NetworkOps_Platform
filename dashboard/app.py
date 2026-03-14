@@ -197,15 +197,21 @@ def _register_middleware(app):
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        _csp_extra_origins = os.getenv("DASHBOARD_ORIGIN", "")
-        _csp_connect = "'self' ws://localhost:5001 wss://localhost:5001"
-        if _csp_extra_origins and "localhost" not in _csp_extra_origins:
-            _ws_origin = _csp_extra_origins.replace("http://", "ws://").replace("https://", "wss://")
-            _csp_connect += f" {_csp_extra_origins} {_ws_origin}"
+        # Build CSP connect-src: always allow 'self' + WebSocket on same origin.
+        # DASHBOARD_ORIGIN adds additional allowed origins for split deployments.
+        _dashboard_origin = os.getenv("DASHBOARD_ORIGIN", "")
+        _csp_connect_parts = ["'self'"]
+        # Allow WebSocket on same origin (browser rewrites scheme automatically)
+        _csp_connect_parts.append("ws:")
+        _csp_connect_parts.append("wss:")
+        if _dashboard_origin:
+            _csp_connect_parts.append(_dashboard_origin)
+            _ws = _dashboard_origin.replace("http://", "ws://").replace("https://", "wss://")
+            _csp_connect_parts.append(_ws)
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; script-src 'self'; "
             "style-src 'self' 'unsafe-inline'; "
-            f"connect-src {_csp_connect}"
+            f"connect-src {' '.join(_csp_connect_parts)}"
         )
 
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
