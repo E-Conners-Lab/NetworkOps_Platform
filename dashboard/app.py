@@ -197,10 +197,15 @@ def _register_middleware(app):
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        _csp_extra_origins = os.getenv("DASHBOARD_ORIGIN", "")
+        _csp_connect = "'self' ws://localhost:5001 wss://localhost:5001"
+        if _csp_extra_origins and "localhost" not in _csp_extra_origins:
+            _ws_origin = _csp_extra_origins.replace("http://", "ws://").replace("https://", "wss://")
+            _csp_connect += f" {_csp_extra_origins} {_ws_origin}"
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; script-src 'self'; "
             "style-src 'self' 'unsafe-inline'; "
-            "connect-src 'self' ws://localhost:5001 wss://localhost:5001"
+            f"connect-src {_csp_connect}"
         )
 
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
