@@ -439,7 +439,15 @@ alembic upgrade head
 python dashboard/api_server.py
 ```
 
-**6. Access the dashboard** at `http://<your-vm-ip>:5001`. Default login: `admin` / `admin` (you'll be prompted to change the password).
+**6. Change the default password:**
+
+```bash
+TOKEN=$(curl -s http://localhost:5001/api/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+
+curl -X POST http://localhost:5001/api/auth/change-password -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d '{"old_password":"admin","new_password":"YourNewPassword"}'
+```
+
+**7. Access the dashboard** at `http://<your-vm-ip>:5001` and log in with `admin` and your new password.
 
 > **Note:** `CONTAINERLAB_LOCAL=true` runs Docker commands directly instead of routing through Multipass. `CONTAINERLAB_ONLY=true` hides EVE-NG/physical devices that aren't present, showing only containerlab devices in the dashboard.
 
