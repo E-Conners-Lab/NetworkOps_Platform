@@ -556,6 +556,20 @@ elif USE_NETBOX:
 else:
     DEVICES = _STATIC_DEVICES
 
+# Filter to containerlab-only when no EVE-NG/physical devices are available
+_containerlab_only = os.getenv("CONTAINERLAB_ONLY", "false").lower() == "true"
+if _containerlab_only and not _demo_mode:
+    DEVICES = {
+        name: device for name, device in DEVICES.items()
+        if device.get("device_type", "").startswith("containerlab_")
+    }
+    # Remove cross-lab links (e.g., edge1↔R3 which references EVE-NG devices)
+    CONTAINERLAB_LINKS = [
+        link for link in CONTAINERLAB_LINKS
+        if link["source"] in DEVICES and link["target"] in DEVICES
+    ]
+    print(f"Containerlab-only mode: {len(DEVICES)} devices loaded", file=sys.stderr)
+
 # Derive loopback and host maps from device inventory.
 # For NetBox mode, DEVICE_HOSTS was already set above from NetBox client;
 # for static mode, derive it from the enriched _STATIC_DEVICES entries.
