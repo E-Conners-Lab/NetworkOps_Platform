@@ -1066,16 +1066,20 @@ def get_ospf_status():
         })
 
     from concurrent.futures import ThreadPoolExecutor, as_completed
+    from core.containerlab import run_command as run_containerlab_command
     DEVICES = _get_devices()
 
-    # Only Cisco routers run OSPF
-    ospf_routers = [name for name, dev in DEVICES.items()
-                    if dev.get('device_type') == 'cisco_xe'
-                    and not name.startswith('Switch')]
+    # Cisco routers (not switches) and containerlab FRR devices run OSPF
+    cisco_ospf_routers = [name for name, dev in DEVICES.items()
+                          if dev.get('device_type') == 'cisco_xe'
+                          and not name.startswith('Switch')]
+    frr_ospf_routers = [name for name, dev in DEVICES.items()
+                        if dev.get('device_type') == 'containerlab_frr']
 
     results = {}
 
     def fetch_ospf_data(device_name):
+        """Fetch OSPF data from a Cisco IOS-XE device via Netmiko."""
         device = DEVICES[device_name]
         try:
             connection = ConnectHandler(**device)
@@ -1141,9 +1145,84 @@ def get_ospf_status():
                 "status": "error"
             }
 
-    # Fetch from all routers in parallel
+    def fetch_ospf_data_frr(device_name):
+        """Fetch OSPF data from a containerlab FRRouting device."""
+        try:
+            # Get OSPF neighbors
+            # FRR format: "10.255.0.1  1 Full/-  2h56m  32.247s 10.200.0.1  eth1:10.200.0.2  0 0 0"
+            neighbor_output = run_containerlab_command(device_name, "show ip ospf neighbor")
+            neighbors = []
+            for line in neighbor_output.split('\n'):
+                if not line.strip() or 'Neighbor ID' in line or '---' in line:
+                    continue
+                parts = line.split()
+                if len(parts) >= 7 and re.match(r'\d+\.\d+\.\d+\.\d+', parts[0]):
+                    # Interface field in FRR is "eth1:10.200.0.2" — extract just the interface name
+                    intf_field = parts[6] if len(parts) > 6 else ''
+                    intf_name = intf_field.split(':')[0] if ':' in intf_field else intf_field
+                    neighbors.append({
+                        "neighbor_id": parts[0],
+                        "state": parts[2].split('/')[0],
+                        "interface": intf_name,
+                    })
+
+            # Get OSPF interfaces — parse verbose "show ip ospf interface" output
+            # FRR format: blocks starting with "eth1 is up" containing Area, Cost, Network Type
+            intf_output = run_containerlab_command(device_name, "show ip ospf interface")
+            interfaces = []
+            router_id = None
+            current_intf = None
+
+            for line in intf_output.split('\n'):
+                # Interface name line: "eth1 is up"
+                intf_match = re.match(r'^(\S+)\s+is\s+(up|down)', line)
+                if intf_match:
+                    current_intf = {"name": intf_match.group(1), "area": 0, "cost": 1, "state": "UNKNOWN"}
+                    interfaces.append(current_intf)
+                    continue
+
+                if current_intf:
+                    # Area line: "  Internet Address 10.200.0.2/30, Broadcast 10.200.0.3, Area 0.0.0.0"
+                    area_match = re.search(r'Area\s+([\d.]+)', line)
+                    if area_match:
+                        current_intf["area"] = area_match.group(1)
+
+                    # Router ID and cost: "  Router ID 10.255.0.2, Network Type POINTOPOINT, Cost: 10"
+                    rid_match = re.search(r'Router ID\s+([\d.]+)', line)
+                    if rid_match:
+                        router_id = rid_match.group(1)
+
+                    cost_match = re.search(r'Cost:\s+(\d+)', line)
+                    if cost_match:
+                        current_intf["cost"] = int(cost_match.group(1))
+
+                    # State: "State Point-To-Point" or "State Loopback"
+                    state_match = re.search(r'State\s+(\S+)', line)
+                    if state_match:
+                        current_intf["state"] = state_match.group(1)
+
+            return device_name, {
+                "neighbors": neighbors,
+                "interfaces": interfaces,
+                "router_id": router_id,
+                "status": "success"
+            }
+        except Exception as e:
+            logger.exception(f"Failed to fetch OSPF data from FRR device {device_name}")
+            return device_name, {
+                "neighbors": [],
+                "interfaces": [],
+                "error": "Failed to fetch OSPF data",
+                "status": "error"
+            }
+
+    # Fetch from all OSPF routers in parallel
     with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = {executor.submit(fetch_ospf_data, name): name for name in ospf_routers}
+        futures = {}
+        for name in cisco_ospf_routers:
+            futures[executor.submit(fetch_ospf_data, name)] = name
+        for name in frr_ospf_routers:
+            futures[executor.submit(fetch_ospf_data_frr, name)] = name
         for future in as_completed(futures):
             device_name, data = future.result()
             results[device_name] = data
