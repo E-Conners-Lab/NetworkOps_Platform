@@ -371,22 +371,81 @@ Use the quickstart script to configure NetworkOps for your own network devices:
 
 The script detects [uv](https://docs.astral.sh/uv/) automatically for faster dependency installation.
 
-### Containerlab Deployment Options
+### Deploying on a Linux VM (Proxmox, bare metal, etc.)
 
-By default, the platform sends containerlab commands through a **Multipass VM** (`multipass exec containerlab -- ...`). If you're running containerlab directly on the same host as the platform (e.g., a Proxmox Linux VM or bare-metal Linux server), set `CONTAINERLAB_LOCAL=true` in your `.env` to bypass Multipass and run Docker commands locally:
+You can run the entire platform and containerlab on a single Linux host — no Multipass needed.
+
+**1. Install prerequisites:**
 
 ```bash
-# In .env
-CONTAINERLAB_LOCAL=true
-CONTAINERLAB_TOPOLOGY_PATH=/path/to/datacenter.clab.yml
+# Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER && newgrp docker
+
+# Containerlab
+sudo bash -c "$(curl -sL https://get.containerlab.dev)"
+
+# uv (Python version manager + package installer)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc
+
+# Node.js (for building the React frontend)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
 ```
 
-Deploy the included topology:
+**2. Clone and set up the project:**
 
 ```bash
+git clone https://github.com/E-Conners-Lab/NetworkOps_Platform.git && cd NetworkOps_Platform
+uv venv --python 3.11
+source .venv/bin/activate
+uv pip install -r requirements.txt
+```
+
+**3. Configure `.env`:**
+
+```bash
+cp .env.example .env
+```
+
+Set these values in `.env`:
+
+```bash
+CONTAINERLAB_LOCAL=true
+CONTAINERLAB_ONLY=true
+CONTAINERLAB_TOPOLOGY_PATH=/path/to/NetworkOps_Platform/containerlab/datacenter.clab.yml
+DEMO_MODE=false
+JWT_SECRET=<generate with: python -c "import secrets; print(secrets.token_hex(32))">
+```
+
+**4. Pull images and deploy the lab:**
+
+```bash
+docker pull frrouting/frr:v8.4.1
+docker pull ghcr.io/nokia/srlinux:24.10.1
+docker pull alpine:3.19
+
 cd containerlab
 sudo containerlab deploy -t datacenter.clab.yml
+cd ..
 ```
+
+**5. Build the frontend, run migrations, and start:**
+
+```bash
+cd dashboard && npm install && npm run build && cd ..
+alembic upgrade head
+python dashboard/api_server.py
+```
+
+**6. Access the dashboard** at `http://<your-vm-ip>:5001`. Default login: `admin` / `admin` (you'll be prompted to change the password).
+
+> **Note:** `CONTAINERLAB_LOCAL=true` runs Docker commands directly instead of routing through Multipass. `CONTAINERLAB_ONLY=true` hides EVE-NG/physical devices that aren't present, showing only containerlab devices in the dashboard.
+
+### Containerlab via Multipass (macOS)
+
+If you're on macOS and prefer to use Multipass to host the containerlab VM, leave `CONTAINERLAB_LOCAL=false` (the default) and set `CONTAINERLAB_VM` to your VM name. See `core/containerlab.py` for details.
 
 ### Supported Device Types
 
