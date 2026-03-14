@@ -2174,12 +2174,21 @@ function App() {
                     const sourceOspf = ospfData.devices[sourceId];
                     const targetOspf = ospfData.devices[targetId];
 
-                    if (sourceOspf && targetOspf) {
+                    if (sourceOspf || targetOspf) {
                       // Use router_id_map from API to resolve neighbor_id → device name
                       const ridMap = ospfData.router_id_map || {};
-                      const isOspfNeighbor = sourceOspf.neighbors?.some(
-                        (n: any) => n.state === 'FULL' && ridMap[n.neighbor_id] === targetId
+                      // Check both directions: source has target as neighbor, or target has source as neighbor
+                      const sourceHasTarget = sourceOspf?.neighbors?.some(
+                        (n: any) => n.state?.toUpperCase() === 'FULL' && ridMap[n.neighbor_id] === targetId
                       );
+                      const targetHasSource = targetOspf?.neighbors?.some(
+                        (n: any) => n.state?.toUpperCase() === 'FULL' && ridMap[n.neighbor_id] === sourceId
+                      );
+                      // Also check if both devices are in the same OSPF area (for transit nodes like spine1)
+                      const sameArea = Object.values(ospfData.areas || {}).some(
+                        (devices: any) => devices.includes(sourceId) && devices.includes(targetId)
+                      );
+                      const isOspfNeighbor = sourceHasTarget || targetHasSource || sameArea;
 
                       if (isOspfNeighbor) {
                         ctx.beginPath();
