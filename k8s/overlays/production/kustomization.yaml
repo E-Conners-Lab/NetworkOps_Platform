@@ -43,9 +43,3 @@ images:
   - name: networkops-worker
     newName: registry.agent.svc.cluster.local:5000/networkops-worker
     newTag: "202604090928"
-
-# Production labels — not added to selectors (selectors are immutable on existing Deployments)
-labels:
-  - pairs:
-      environment: production
-    includeSelectors: false
