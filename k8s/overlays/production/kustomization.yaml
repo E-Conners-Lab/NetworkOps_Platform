@@ -38,12 +38,14 @@ patches:
 # Production image tags
 images:
   - name: networkops-api
-    newName: ghcr.io/yourorg/networkops-api
-    newTag: v2.0.0
+    newName: registry.agent.svc.cluster.local:5000/networkops-api
+    newTag: "202604090928"
   - name: networkops-worker
-    newName: ghcr.io/yourorg/networkops-worker
-    newTag: v2.0.0
+    newName: registry.agent.svc.cluster.local:5000/networkops-worker
+    newTag: "202604090928"
 
-# Production labels
-commonLabels:
-  environment: production
+# Production labels — not added to selectors (selectors are immutable on existing Deployments)
+labels:
+  - pairs:
+      environment: production
+    includeSelectors: false
