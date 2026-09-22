@@ -32,6 +32,12 @@ networkx>=3.2.0
 # Memory System
 aiosqlite>=0.19.0
 chromadb>=0.4.0
+# Keep OpenTelemetry (chromadb transitive dep) in lockstep: an old opentelemetry-proto
+# alongside a newer SDK fails to import under protobuf>=4 and crashes app startup
+opentelemetry-api==1.40.0
+opentelemetry-sdk==1.40.0
+opentelemetry-proto==1.40.0
+opentelemetry-exporter-otlp-proto-grpc==1.40.0
 sentence-transformers>=2.2.0
 
 # RAG Chatbot
